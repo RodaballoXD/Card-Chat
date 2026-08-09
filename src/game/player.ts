@@ -24,6 +24,13 @@ export class PlayerManager {
         return this.hand;
     }
 
+    removeCard(uuid: number): Card | undefined {
+        const idx = this.hand.findIndex((c) => (c.uuid === uuid));
+        if (idx === -1) return undefined;
+        const [removed] = this.hand.splice(idx, 1);
+        return removed;
+    }
+
     winRound() {
         this.wonRounds++;
     }
