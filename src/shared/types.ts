@@ -34,7 +34,7 @@ export interface PlayerState {
         winningCards: number;
     }[];
     hand: Card[];
-    state: PlayCardState | ChooseWinnerStateCzar | ChooseWinnerStateNormal | CreateCardsState;
+    state: PlayCardState | ChooseWinnerStateCzar | ChooseWinnerStateNormal | CreateCardsState | CreateConversationStateCzar | DiscardCardState | null;
 }
 
 interface PlayCardState {
@@ -58,6 +58,16 @@ interface CreateCardsState {
     phase: 'createCards';
     amount: number;
     created: Card[];
+}
+
+interface CreateConversationStateCzar {
+    phase: 'createConversation';
+    created: Message | null;
+}
+
+interface DiscardCardState {
+    phase: 'discardCard';
+    discarded: Card | null | 'none';
 }
 
 export interface Message {
