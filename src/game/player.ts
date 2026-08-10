@@ -1,4 +1,4 @@
-import { Card } from "@shared/types";
+import type { Card } from "../shared/types.js";
 
 export class PlayerManager {
     readonly id: number;

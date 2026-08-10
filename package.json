@@ -1,4 +1,6 @@
 {
+  "name": "card-chat",
+  "type": "module",
   "dependencies": {
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
@@ -8,6 +10,8 @@
     "vitest": "^1.6.1"
   },
   "scripts": {
-    "test": "vitest"
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest",
+    "test:run": "vitest --run"
   }
 }

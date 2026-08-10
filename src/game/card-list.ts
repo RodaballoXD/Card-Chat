@@ -1,5 +1,5 @@
-import { shuffle } from "@shared/helpers";
-import { Card } from "@shared/types";
+import { shuffle } from "../shared/helpers.js";
+import type { Card } from "../shared/types.js";
 
 export class CardList {
     private uuidCount: number = 0;

@@ -1,6 +1,6 @@
-import { PlayerManager } from "./player";
-import { shuffle } from "@shared/helpers";
-import { CardList } from "./card-list";
+import { PlayerManager } from "./player.js";
+import { shuffle } from "../shared/helpers.js";
+import { CardList } from "./card-list.js";
 export class Game {
     constructor(settings, connector) {
         this.players = [];
@@ -65,9 +65,6 @@ export class Game {
             throw new Error(`Player with id ${id} not found`);
         if (this.isCzar(id))
             throw new Error(`Player with id ${id} is the czar and cannot create cards`);
-        const creatorHandFull = (creator.manager.getHand().length >= (this.settings.playerHandSize ?? 5));
-        if (creatorHandFull)
-            throw new Error(`Player with id ${id} has already created the maximum number of cards`);
         const card = {
             uuid: this.cardManager.uuid(),
             creatorId: id,

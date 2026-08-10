@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Game } from '../src/game/game.ts';
-import { Card, GameSettings } from '../src/shared/types.ts';
+import { Game } from '../src/game/game.js';
+import type { GameSettings } from '../src/shared/types.js';
 
 function makeSettings(overrides: Partial<GameSettings> = {}): GameSettings {
     return {

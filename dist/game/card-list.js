@@ -1,4 +1,4 @@
-import { shuffle } from "@shared/helpers";
+import { shuffle } from "../shared/helpers.js";
 export class CardList {
     constructor() {
         this.uuidCount = 0;
