@@ -24,6 +24,10 @@ export class Game {
         this.connector = connector;
     }
 
+    connectConnector(connector: GameConnector) {
+        this.connector = connector;
+    }
+
 
     startGame() {
         if (this.state.phase !== null) throw new Error(`Game has already started`);
@@ -274,23 +278,23 @@ export class Game {
         let state: PlayerState["state"];
 
         if (this.state.phase === 'playCards') {
-            const s = this.state as PlayCardsPhase;
-            const played = s.playedCards.find((p) => (p.playerId === playerId));
+            const phaseState = this.state as PlayCardsPhase;
+            const played = phaseState.playedCards.find((p) => (p.playerId === playerId));
             state = {
                 phase: 'playCards',
                 conversation: this.conversation,
-                played: played ? played.card : null
+                played: (played) ? played.card : null
             };
             return { playerId, players, hand: player.manager.getHand(), state };
         }
         
         if (this.state.phase === 'chooseWinner') {
-            const s = this.state as ChooseWinnerPhase;
+            const phaseState = this.state as ChooseWinnerPhase;
             if (this.isCzar(playerId)) {
                 state = {
                     phase: 'chooseWinner',
                     conversation: this.conversation,
-                    choices: s.playedCards.map((p) => p.card)
+                    choices: phaseState.playedCards.map((p) => p.card)
                 };
             } else {
                 state = {
@@ -302,8 +306,8 @@ export class Game {
         }
 
         if (this.state.phase === 'createCards') {
-            const s = this.state as CreateCardsPhase;
-            const created = s.createdCards.filter((c) => (c.creatorId === playerId));
+            const phaseState = this.state as CreateCardsPhase;
+            const created = phaseState.createdCards.filter((c) => (c.creatorId === playerId));
             if (this.isCzar(playerId)) {
                 if (this.settings.keepChat) state = null;
                 else state = {
@@ -313,7 +317,7 @@ export class Game {
             } else {
                 state = {
                     phase: 'createCards',
-                    amount: s.cardsPerPlayer ?? 1,
+                    amount: phaseState.cardsPerPlayer ?? 1,
                     created
                 };
             }
@@ -321,8 +325,8 @@ export class Game {
         }
 
         if (this.state.phase === 'discardCard') {
-            const s = this.state as DiscardCardPhase;
-            const discarded = s.discardedCards.find((d) => (d.discarderId === playerId));
+            const phaseState = this.state as DiscardCardPhase;
+            const discarded = phaseState.discardedCards.find((d) => (d.discarderId === playerId));
             return { playerId, players, hand: player.manager.getHand(), state: {
                 phase: 'discardCard',
                 discarded: (discarded === undefined) ? null : (discarded.card ?? 'none')

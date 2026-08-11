@@ -73,8 +73,21 @@ export class GameConnector {
             this.socketPlayers.set(socket.id, player.id);
 
             this.update();
+
+            this.tryStartGame();
         } catch (error) {
             this.sendError(socket, error);
+        }
+    }
+
+    private tryStartGame() {
+        const connectedCount = this.game.connectedPlayers().length;
+        if (connectedCount >= 3) {
+            try {
+                this.game.startGame();
+            } catch (err) {
+                // If game cannot be started (already started or other), ignore.
+            }
         }
     }
 

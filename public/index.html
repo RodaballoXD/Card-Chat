@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Chat</title>
+    <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+    <main>
+        <h1>Card Chat</h1>
+
+        <div class="row">
+            <label for="player-name">Player name</label>
+            <input id="player-name" type="text" placeholder="Enter your name" autocomplete="name" />
+        </div>
+
+        <button id="join-button" type="button">Join game</button>
+
+        <div class="status-row">
+            <strong>Connection:</strong>
+            <span id="connection-status">disconnected</span>
+        </div>
+
+        <div class="status-row">
+            <strong>Last event:</strong>
+            <span id="last-event">none</span>
+        </div>
+
+        <div class="game-state">
+            <h2>Game state</h2>
+            <pre id="game-state">Waiting for game state...</pre>
+        </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/client/main.js"></script>
+</body>
+</html>

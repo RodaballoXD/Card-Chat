@@ -13,6 +13,9 @@ export class Game {
         this.settings = settings;
         this.connector = connector;
     }
+    connectConnector(connector) {
+        this.connector = connector;
+    }
     startGame() {
         if (this.state.phase !== null)
             throw new Error(`Game has already started`);
@@ -205,22 +208,13 @@ export class Game {
     dealCards() {
         if (this.state.phase !== 'createCards')
             throw new Error(`Cannot deal cards in phase ${this.state.phase}`);
-        const connected = this.connectedPlayers();
-        const playerDrawData = [];
-        for (const player of connected) {
-            const id = player.manager.id;
-            const createdCards = this.state.createdCards.filter((c) => (c.creatorId === id));
-            const need = (this.settings.playerHandSize ?? 5) - player.manager.getHand().length;
-            playerDrawData.push({ id, createdCards, need });
-        }
-        const shuffled = shuffle(playerDrawData);
-        for (let i = 0; i < shuffled.length; i++) {
-            const data = shuffled[i];
-            const nextPlayerData = shuffled[i + 1] ?? shuffled[0];
-            const manager = this.players.find((p) => (p.manager.id === data.id)).manager;
-            for (let j = 0; j < data.need; j++) {
-                const card = nextPlayerData.createdCards[j] ?? this.cardManager.presetCard();
-                manager.giveCard(card);
+        const shuffled = shuffle(this.state.createdCards);
+        const handSize = this.settings.playerHandSize ?? 5;
+        for (const player of this.players) {
+            const cardsNeeded = handSize - player.manager.getHand().length;
+            for (let i = 0; i < cardsNeeded; i++) {
+                const card = shuffled.pop() ?? this.cardManager.presetCard();
+                player.manager.giveCard(card);
             }
         }
     }
