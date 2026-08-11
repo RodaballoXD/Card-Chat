@@ -100,6 +100,7 @@ export class Game {
             text
         };
         this.conversation = [message];
+        this.tryEndPlayCardsPhase();
     }
     discardCard(playerId, cardUuid) {
         if (this.state.phase !== 'discardCard')
@@ -180,7 +181,7 @@ export class Game {
         const playedCards = this.state.playedCards;
         const playingPlayers = this.connectedPlayers().filter((p) => (!this.isCzar(p.manager.id)));
         const allHavePlayed = playingPlayers.every((p) => (playedCards.some((c) => (c.playerId === p.manager.id))));
-        if (allHavePlayed) {
+        if (allHavePlayed && (this.conversation.length !== 0)) {
             this.advanceGamePhase();
         }
     }
@@ -253,22 +254,22 @@ export class Game {
         }));
         let state;
         if (this.state.phase === 'playCards') {
-            const s = this.state;
-            const played = s.playedCards.find((p) => (p.playerId === playerId));
+            const phaseState = this.state;
+            const played = phaseState.playedCards.find((p) => (p.playerId === playerId));
             state = {
                 phase: 'playCards',
                 conversation: this.conversation,
-                played: played ? played.card : null
+                played: (played) ? played.card : null
             };
             return { playerId, players, hand: player.manager.getHand(), state };
         }
         if (this.state.phase === 'chooseWinner') {
-            const s = this.state;
+            const phaseState = this.state;
             if (this.isCzar(playerId)) {
                 state = {
                     phase: 'chooseWinner',
                     conversation: this.conversation,
-                    choices: s.playedCards.map((p) => p.card)
+                    choices: phaseState.playedCards.map((p) => p.card)
                 };
             }
             else {
@@ -280,8 +281,8 @@ export class Game {
             return { playerId, players, hand: player.manager.getHand(), state };
         }
         if (this.state.phase === 'createCards') {
-            const s = this.state;
-            const created = s.createdCards.filter((c) => (c.creatorId === playerId));
+            const phaseState = this.state;
+            const created = phaseState.createdCards.filter((c) => (c.creatorId === playerId));
             if (this.isCzar(playerId)) {
                 if (this.settings.keepChat)
                     state = null;
@@ -294,15 +295,15 @@ export class Game {
             else {
                 state = {
                     phase: 'createCards',
-                    amount: s.cardsPerPlayer ?? 1,
+                    amount: phaseState.cardsPerPlayer ?? 1,
                     created
                 };
             }
             return { playerId, players, hand: player.manager.getHand(), state };
         }
         if (this.state.phase === 'discardCard') {
-            const s = this.state;
-            const discarded = s.discardedCards.find((d) => (d.discarderId === playerId));
+            const phaseState = this.state;
+            const discarded = phaseState.discardedCards.find((d) => (d.discarderId === playerId));
             return { playerId, players, hand: player.manager.getHand(), state: {
                     phase: 'discardCard',
                     discarded: (discarded === undefined) ? null : (discarded.card ?? 'none')

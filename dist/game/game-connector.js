@@ -12,6 +12,17 @@ export class GameConnector {
         socket.on("joinGame", (name) => {
             this.joinGame(socket, name);
         });
+        // simple debug message for testing from client
+        socket.on("debugMessage", (payload) => {
+            try {
+                console.log(`Received debugMessage from ${socket.id}:`, payload);
+                // Echo back to the sender so the client can verify round-trip
+                socket.emit("debugEcho", payload);
+            }
+            catch (err) {
+                console.error("Error handling debugMessage:", err);
+            }
+        });
         socket.on("playCard", (cardId) => {
             this.handleAction(socket, () => {
                 this.game.playCard(this.getPlayerId(socket), cardId);

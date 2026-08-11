@@ -27,6 +27,16 @@
             <span id="last-event">none</span>
         </div>
 
+        <div class="row">
+            <label for="event-name">Emit arbitrary event</label>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input id="event-name" type="text" placeholder="event name (e.g. playCard)" style="flex:1 1 160px" />
+                <input id="event-payload" type="text" placeholder='payload (JSON or plain text, e.g. 5 or "hello")' style="flex:2 1 240px" />
+                <button id="send-event">Send</button>
+            </div>
+            <div style="margin-top:8px;"><strong>Server reply:</strong> <span id="last-debug">none</span></div>
+        </div>
+
         <div class="game-state">
             <h2>Game state</h2>
             <pre id="game-state">Waiting for game state...</pre>

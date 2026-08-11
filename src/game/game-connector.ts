@@ -18,22 +18,26 @@ export class GameConnector {
 
     private handleConnection(socket: Socket) {
         socket.on("joinGame", (name: string) => {
+            this.expectType(name, "string", socket);
             this.joinGame(socket, name);
         });
 
         socket.on("playCard", (cardId: number) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 this.game.playCard(this.getPlayerId(socket), cardId);
             });
         });
 
         socket.on("createCard", (text: string) => {
+            this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
                 this.game.createCard(this.getPlayerId(socket), text);
             });
         });
 
         socket.on("chooseWinner", (cardId: number) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 const playerId = this.getPlayerId(socket);
 
@@ -46,6 +50,7 @@ export class GameConnector {
         });
 
         socket.on("discardCard", (cardId: number | null) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 this.game.discardCard(
                     this.getPlayerId(socket),
@@ -115,6 +120,12 @@ export class GameConnector {
             this.update();
         } catch (error) {
             this.sendError(socket, error);
+        }
+    }
+
+    private expectType(value: unknown, type: string, socket: Socket) {
+        if (typeof value !== type) {
+            this.sendError(socket, `Expected ${type}, got ${typeof value}`);
         }
     }
 

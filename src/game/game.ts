@@ -110,6 +110,8 @@ export class Game {
             text
         };
         this.conversation = [message];
+
+        this.tryEndPlayCardsPhase();
     }
 
     discardCard(playerId: number, cardUuid: number | null) {
@@ -197,7 +199,7 @@ export class Game {
         const playedCards = (this.state as PlayCardsPhase).playedCards;
         const playingPlayers = this.connectedPlayers().filter((p) => (!this.isCzar(p.manager.id)));
         const allHavePlayed = playingPlayers.every((p) => (playedCards.some((c) => (c.playerId === p.manager.id))));
-        if (allHavePlayed) {
+        if (allHavePlayed && (this.conversation.length !== 0)) {
             this.advanceGamePhase();
         }
     }
