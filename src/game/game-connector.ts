@@ -29,6 +29,7 @@ export class GameConnector {
             const joinData = this.parseJoinGameData(data, socket);
             if (!joinData) return;
             this.joinGame(socket, joinData.name, joinData.playerUuid);
+            this.update({ playerId: this.getPlayerId(socket), socket });
         });
 
         socket.on("reconnectGame", (playerUuid: string) => {
