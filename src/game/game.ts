@@ -398,7 +398,7 @@ export class Game {
                 if (this.settings.keepChat) state = null;
                 else state = {
                     phase: 'createConversation',
-                    created: null
+                    created: (this.conversation.length > 0) ? this.conversation[0] : null
                 };
             } else {
                 state = {

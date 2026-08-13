@@ -341,13 +341,14 @@ main {
 }
 
 .conversation-sender {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     margin-bottom: 4px;
     color: #075e54;
 }
 
 .conversation-text {
+    font-size: 16px;
     margin: 0;
     color: #17212b;
     line-height: 1.5;

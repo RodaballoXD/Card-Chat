@@ -257,7 +257,7 @@ function renderActionSection(state: PlayerState): string {
         }
     } else if (phase === "createConversation") {
         content = `
-            <div class="action-text">${(state.state as CreateConversationStateCzar).created ?? "Escribe un nuevo mensaje inicial"}</div>
+            <div class="action-text">${(state.state as CreateConversationStateCzar).created ? state.state!.created!.text : "Escribe un nuevo mensaje inicial"}</div>
             <div class="action-row">
                 <div class="input-counter-wrap">
                     <input class="action-input" data-action="create-conversation-input" type="text" maxlength="100" placeholder="Escribe una conversación" />
