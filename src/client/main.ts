@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     socket.on("gameState", (state: PlayerState) => {
+        console.log(`Recieved gameState: ${JSON.stringify(state)}`);
         ownPlayerName = getOwnPlayerName(state);
         renderApp(renderPlayerState(state));
         bindInteractions(state);

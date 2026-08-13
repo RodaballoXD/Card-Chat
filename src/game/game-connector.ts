@@ -40,7 +40,7 @@ export class GameConnector {
             this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 this.game.playCard(this.getPlayerId(socket), cardId);
-            });
+            }, true);
         });
 
         socket.on("createCard", (text: string) => {
@@ -190,10 +190,10 @@ export class GameConnector {
     }
 
 
-    private handleAction(socket: Socket, action: () => void) {
+    private handleAction(socket: Socket, action: () => void, updateSingleSocket: boolean = false) {
         try {
             action();
-            this.update();
+            this.update(updateSingleSocket ? { playerId: this.getPlayerId(socket), socket } : undefined);
         } catch (error) {
             this.sendError(socket, error);
         }
@@ -206,8 +206,8 @@ export class GameConnector {
     }
 
 
-    update() {
-        for (const [playerId, socket] of this.playerSockets) {
+    update(singleSocket?: { playerId: number, socket: Socket }) {
+        const emit = (playerId: number, socket: Socket) => {
             try {
                 const state = this.game.playerState(playerId);
                 socket.emit("gameState", state);
@@ -217,6 +217,13 @@ export class GameConnector {
                     error
                 );
             }
+        }
+        if (singleSocket) {
+            emit(singleSocket.playerId, singleSocket.socket);
+            return;
+        }
+        for (const [playerId, socket] of this.playerSockets) {
+            emit(playerId, socket);
         }
     }
 
