@@ -35,6 +35,11 @@ export class GameConnector {
         socket.on("reconnectGame", (playerUuid: string) => {
             this.expectType(playerUuid, "string", socket);
             this.reconnectGame(socket, playerUuid);
+            try {
+                this.update({ playerId: this.getPlayerId(socket), socket });
+            } catch {
+                // there was no player with that socket
+            }
         });
 
         socket.on("playCard", (cardId: number) => {
