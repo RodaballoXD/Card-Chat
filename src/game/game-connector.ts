@@ -48,14 +48,14 @@ export class GameConnector {
             this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
                 this.game.createCard(this.getPlayerId(socket), text);
-            });
+            }, true);
         });
 
         socket.on("createConversation", (text: string) => {
             this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
                 this.game.createConversation(this.getPlayerId(socket), text);
-            });
+            }, true);
         });
 
         socket.on("chooseWinner", (cardId: number) => {
@@ -77,7 +77,7 @@ export class GameConnector {
                     this.getPlayerId(socket),
                     cardId
                 );
-            });
+            }, true);
         });
 
         socket.on("disconnect", () => {

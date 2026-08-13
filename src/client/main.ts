@@ -101,7 +101,7 @@ function bindJoinInteractions() {
                 bindJoinInteractions();
                 return;
             }
-            if (value.startsWith("/settings")) {
+            if (value.startsWith("/")) {
                 handleSettingsChangeCommand(value);
                 return;
             }

@@ -40,6 +40,7 @@ export class Game {
         this.czarId = null;
         this.conversation = [];
         this.cardManager = new CardList();
+        this.settings = { czar: 'roundRobin' };
     }
 
     changeSetting(setting: keyof GameSettings, value: unknown) {
@@ -224,7 +225,7 @@ export class Game {
                 phase: 'discardCard',
                 discardedCards: []
             };
-            this.conversation = [];
+            if (this.settings.keepChat) this.conversation = [];
             this.connector?.update();
             return;
         }
@@ -284,7 +285,7 @@ export class Game {
         const currentId = this.czarId ?? -1;
         let best: number | null = null;
         // Find smallest that is bigger than `currentId`
-        for (const player of this.players) {
+        for (const player of this.connectedPlayers()) {
             const playerId = player.manager.id;
             if (playerId > currentId && (best === null || playerId < best)) {
                 best = playerId;
