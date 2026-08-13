@@ -10,7 +10,8 @@ export class GameConnector {
         });
     }
     handleConnection(socket) {
-        socket.on("changeSetting", (setting, value) => {
+        socket.on("changeSettings", (setting, value) => {
+            console.log(`Received changeSetting: ${setting} = ${value}`);
             this.handleAction(socket, () => {
                 this.game.changeSetting(setting, value);
             });

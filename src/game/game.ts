@@ -65,6 +65,7 @@ export class Game {
             default:
                 throw new Error(`Unknown setting ${setting}`);
         }
+        console.log(`Setting ${setting} changed to ${value}`);
     }
 
 
@@ -194,6 +195,7 @@ export class Game {
 
     private advanceGamePhase() {
         const currentPhase = this.state.phase;
+        
         if (currentPhase === null || currentPhase === 'createCards') {
             if (currentPhase === null && this.czarId === null && this.settings.czar !== 'none' && this.players.length > 0) {
                 this.czarId = Math.min(...this.players.map((p) => p.manager.id));

@@ -1,6 +1,6 @@
 ﻿import { Message, Player, PlayerState } from "../shared/types.js";
 import { actionRequiresCards, canCreateCard, canDiscardCard, hasConversation } from "./state-helpers.js";
-import type { CreateConversationStateCzar, WinnerScreen } from "../shared/types.js";
+import type { ChooseWinnerStateCzar, CreateCardsState, CreateConversationStateCzar, DiscardCardState, PlayCardState, WinnerScreen } from "../shared/types.js";
 
 declare const io: typeof import("socket.io-client").io;
 
@@ -77,10 +77,10 @@ function renderJoinScreen() {
         <div class="join-screen">
             <div class="join-box">
                 <h1 class="join-title">Card Chat</h1>
-                <p class="join-subtitle">Enter your name to join the game.</p>
-                <input class="join-input" data-action="join-name" type="text" placeholder="Your name" autocomplete="name" />
-                <button class="join-button" data-action="join-game">Join game</button>
-                <div class="join-note">The game starts automatically once 3 players are connected.</div>
+                <p class="join-subtitle">Introduce tu nombre para unirte a la partida.</p>
+                <input class="join-input" data-action="join-name" type="text" placeholder="Tu nombre" autocomplete="name" />
+                <button class="join-button" data-action="join-game">Unirse a la partida</button>
+                <div class="join-note">La partida empieza automáticamente cuando hay 3 jugadores conectados.</div>
             </div>
         </div>
     `);
@@ -99,7 +99,7 @@ function bindJoinInteractions() {
                 bindJoinInteractions();
                 return;
             }
-            if (value.startsWith("/setting")) {
+            if (value.startsWith("/settings")) {
                 handleSettingsChangeCommand(value);
                 return;
             }
@@ -149,7 +149,7 @@ function renderHeader(state: PlayerState): string {
             ${renderPlayerHeaderRow(
                 ownPlayer ?? {
                     id: 0,
-                    name: "Join the game",
+                    name: "Únete a la partida",
                     isConnected: true,
                     isCzar: false,
                     roundsWon: 0,
@@ -170,7 +170,7 @@ function renderPlayerHeaderRow(player: Player, isOwn = false): string {
         <div class="player-row${isOwn ? " current" : ""}">
             <div class="player-left">${escapeHtml(player.name)}</div>
             <div class="player-right">
-                ${player.isCzar ? `<span class="player-tag">czar</span>` : ""}
+                ${player.isCzar ? `<span class="player-tag">zar</span>` : ""}
                 <span>${player.roundsWon} 🏆</span>
                 <span>${player.winningCards} 🃏</span>
             </div>
@@ -208,18 +208,18 @@ function renderActionSection(state: PlayerState): string {
 
     if (phase === "playCards") {
         if (isCzar) {
-            content = `<div class="action-text">You are the czar. Waiting for players to play.</div>`;
-        } else if ((state.state as any).played) {
-            content = `<div class="action-text">Card played. Waiting for the czar.</div>`;
+            content = `<div class="action-text">Eres el zar. Esperando a que los jugadores jueguen una carta.</div>`;
+        } else if ((state.state as PlayCardState).played) {
+            content = `<div class="action-text">Carta jugada. Esperando al zar.</div>`;
         } else {
-            content = `<div class="action-text">Select a card to play.</div>`;
+            content = `<div class="action-text">Elige una carta para jugarla.</div>`;
             selectableAction = "play-card";
         }
     } else if (phase === "chooseWinner") {
-        const choices = ((state.state as any).choices ?? []) as Array<{ uuid: number; content: string }>;
+        const choices = ((state.state as ChooseWinnerStateCzar).choices ?? []);
         selectableAction = "choose-winner";
         content = `
-            <div class="action-text">Choose a winning card.</div>
+            <div class="action-text">Elige la carta ganadora.</div>
             <div class="choice-list">
                 ${choices
                     .map(
@@ -231,57 +231,57 @@ function renderActionSection(state: PlayerState): string {
                     )
                     .join("")}
             </div>
-            <button class="action-button" data-action="confirm-choice"}>Select</button>
+            <button class="action-button" data-action="confirm-choice"}>Seleccionar</button>
         `;
     } else if (phase === "awaitWinnerChoice") {
-        content = `<div class="action-text">Waiting for the czar to choose a winner.</div>`;
+        content = `<div class="action-text">Esperando a que el zar elija un ganador.</div>`;
     }
     else if (phase === "createCards") {
         if (isCzar) {
-            content = `<div class="action-text">You are the czar. Waiting for players to create cards.</div>`;
+            content = `<div class="action-text">Eres el zar. Esperando a que los jugadores creen cartas.</div>`;
         } else {
-            const amount = (state.state as any).amount ?? 1;
+            const amount = (state.state as CreateCardsState).amount ?? 1;
             const canCreate = canCreateCard(state.state);
             content = `
-                <div class="action-text">Create ${amount} card${amount === 1 ? "" : "s"}.</div>
+                <div class="action-text">Crea ${amount} carta${amount === 1 ? "" : "s"}.</div>
                 <div class="action-row">
                     <div class="input-counter-wrap">
-                        <input class="action-input" data-action="create-card-input" type="text" maxlength="100" placeholder="Write a card" ${canCreate ? "" : "disabled"} />
+                        <input class="action-input" data-action="create-card-input" type="text" maxlength="100" placeholder="Escribe una carta" ${canCreate ? "" : "disabled"} />
                         <span class="char-counter" data-char-counter="create-card">0/100</span>
                     </div>
-                    <button class="action-button" data-action="create-card" ${canCreate ? "" : "disabled"}>Create</button>
+                    <button class="action-button" data-action="create-card" ${canCreate ? "" : "disabled"}>Crear</button>
                 </div>
             `;
         }
     } else if (phase === "createConversation") {
         content = `
-            <div class="action-text">${(state.state as CreateConversationStateCzar).created ?? "Write a new starting message"}</div>
+            <div class="action-text">${(state.state as CreateConversationStateCzar).created ?? "Escribe un nuevo mensaje inicial"}</div>
             <div class="action-row">
                 <div class="input-counter-wrap">
-                    <input class="action-input" data-action="create-conversation-input" type="text" maxlength="100" placeholder="Write a conversation" />
+                    <input class="action-input" data-action="create-conversation-input" type="text" maxlength="100" placeholder="Escribe una conversación" />
                     <span class="char-counter" data-char-counter="create-conversation">0/100</span>
                 </div>
-                <button class="action-button" data-action="create-conversation">Send</button>
+                <button class="action-button" data-action="create-conversation">Enviar</button>
             </div>
         `;
     } else if (phase === "discardCard") {
         const canDiscard = canDiscardCard(state.state);
         content = `
-            <div class="action-text">Discard a card or keep your hand.</div>
-            <button class="action-button" data-action="keep-cards" ${canDiscard ? "" : "disabled"}>Keep cards</button>
+            <div class="action-text">Descarta una carta o conserva tu mano.</div>
+            <button class="action-button" data-action="keep-cards" ${canDiscard ? "" : "disabled"}>Conservar mano</button>
         `;
         if (canDiscard) {
             selectableAction = "discard-card";
         }
     } else {
-        content = `<div class="action-text">Waiting for the game to start.</div>`;
+        content = `<div class="action-text">Esperando a que empiece la partida.</div>`;
     }
 
     const actionSummary = renderActionSummary(state);
 
     return `
         <section class="action-panel${!hasConversationState ? " full-height" : ""}${requiresCards ? " requires-cards" : ""}">
-            <div class="section-title">Action</div>
+            <div class="section-title">Acción</div>
             <div class="action-content">
                 ${actionSummary ? `<div class="action-summary">${actionSummary}</div>` : ""}
                 ${content}
@@ -294,28 +294,28 @@ function renderActionSummary(state: PlayerState): string {
     if (!state.state) return "";
 
     if (state.state.phase === "playCards") {
-        const played = (state.state as any).played;
+        const played = (state.state as PlayCardState).played;
         if (!played) return "";
-        return `<span class="action-summary-label">Played</span><span class="action-summary-value">${escapeHtml(played.content)}</span>`;
+        return `<span class="action-summary-label">Jugada</span><span class="action-summary-value">${escapeHtml(played.content)}</span>`;
     }
 
     if (state.state.phase === "createCards") {
-        const created = ((state.state as any).created ?? []) as Array<{ content: string }>;
+        const created = ((state.state as CreateCardsState).created ?? []);
         if (!created.length) return "";
-        return `<span class="action-summary-label">Created</span><span class="action-summary-value">${created.map((card) => escapeHtml(card.content)).join(" • ")}</span>`;
+        return `<span class="action-summary-label">Creadas</span><span class="action-summary-value">${created.map((card) => escapeHtml(card.content)).join(" • ")}</span>`;
     }
 
     if (state.state.phase === "createConversation") {
-        const created = (state.state as any).created as Message | null;
+        const created = (state.state as CreateConversationStateCzar).created;
         if (!created) return "";
-        return `<span class="action-summary-label">Conversation</span><span class="action-summary-value">${escapeHtml(created.text)}</span>`;
+        return `<span class="action-summary-label">Conversación</span><span class="action-summary-value">${escapeHtml(created.text)}</span>`;
     }
 
     if (state.state.phase === "discardCard") {
-        const discarded = (state.state as any).discarded;
+        const discarded = (state.state as DiscardCardState).discarded;
         if (discarded === null) return "";
-        if (discarded === "none") return `<span class="action-summary-label">Discarded</span><span class="action-summary-value">kept hand</span>`;
-        return `<span class="action-summary-label">Discarded</span><span class="action-summary-value">${escapeHtml(discarded.content)}</span>`;
+        if (discarded === "none") return `<span class="action-summary-label">Descartada</span><span class="action-summary-value">mano conservada</span>`;
+        return `<span class="action-summary-label">Descartada</span><span class="action-summary-value">${escapeHtml(discarded.content)}</span>`;
     }
 
     return "";
@@ -336,7 +336,7 @@ function renderHand(state: PlayerState): string {
         return `
             <section class="hand-panel${showConversation ? "" : " no-conversation"}">
                 ${actionPanel}
-                <div class="hand-empty">No cards in hand.</div>
+                <div class="hand-empty">No tienes cartas en la mano.</div>
             </section>
         `;
     }
@@ -344,7 +344,7 @@ function renderHand(state: PlayerState): string {
     return `
         <section class="hand-panel${isSelecting ? " selecting" : ""}${showConversation ? "" : " no-conversation"}">
             ${actionPanel}
-            ${isSelecting ? `<button class="hand-confirm" data-action="confirm-card">Confirm</button>` : ""}
+            ${isSelecting ? `<button class="hand-confirm" data-action="confirm-card">Confirmar</button>` : ""}
             <div class="hand-list">
                 ${hand.map((card) => `
                     <button class="hand-card${selectedCardId === card.uuid ? " selected" : ""}" data-card-id="${card.uuid}" data-action="${isSelecting ? "select-card" : "none"}">
@@ -507,8 +507,8 @@ function renderWinnerScreen(screen: WinnerScreen): string {
     else {
         winnerResult = `
             <div class="winner-result">
-                <div class="winner-card-text">Czar left the game</div>
-                <div class="winner-line">No winner this round</div>
+                <div class="winner-card-text">El zar ha abandonado la partida</div>
+                <div class="winner-line">No hay ganador en esta ronda</div>
             </div>
         `;
     }
@@ -520,7 +520,7 @@ function renderWinnerScreen(screen: WinnerScreen): string {
                     ${renderConversationMessages(screen.conversation, ownPlayerName)}
                 </div>
                 ${winnerResult}
-                <button class="winner-close" data-action="close-winner-screen" ${winnerCloseEnabled ? "" : "disabled"}>Close</button>
+                <button class="winner-close" data-action="close-winner-screen" ${winnerCloseEnabled ? "" : "disabled"}>Cerrar</button>
             </div>
         </div>
     `;
@@ -542,7 +542,7 @@ function renderConversationMessages(messages: Message[], currentPlayerName: stri
 
     return `
         <section class="conversation">
-            <div class="section-title">Conversation</div>
+            <div class="section-title">Conversación</div>
             <div class="conversation-list">
                 ${items}
             </div>
@@ -648,7 +648,7 @@ function escapeHtml(text: string): string {
 
 function handleSettingsChangeCommand(command: string) {
     try {
-        const settingsString = command.replace("/setting", "").trim();
+        const settingsString = command.replace("/settings", "").trim();
         const settings = JSON.parse(settingsString);
         for (const key in settings) {
             socket.emit("changeSettings", key, settings[key]);
