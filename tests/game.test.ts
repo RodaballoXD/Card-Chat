@@ -151,4 +151,21 @@ describe('Game', () => {
 
         expect(totalRoundsWon(players)).toBe(5);
     });
+
+    it('rejects cards and conversations longer than 100 characters', () => {
+        const players = [
+            game.connectPlayer('alice'),
+            game.connectPlayer('bob'),
+            game.connectPlayer('carol')
+        ];
+
+        const czar = players[0];
+        const nonCzar = players[1];
+
+        (game as any).state = { phase: 'createCards', createdCards: [], cardsPerPlayer: 1 };
+        (game as any).czarId = czar.id;
+
+        expect(() => game.createCard(nonCzar.id, 'x'.repeat(101))).toThrow();
+        expect(() => game.createConversation(czar.id, 'x'.repeat(101))).toThrow();
+    });
 });

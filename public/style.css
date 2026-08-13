@@ -57,7 +57,11 @@ main {
     flex-direction: column;
     gap: 16px;
     padding: 16px;
-    padding-bottom: 200px;
+    padding-bottom: 24px;
+}
+
+.player-body.no-conversation {
+    min-height: 0;
 }
 
 .join-box {
@@ -196,10 +200,64 @@ main {
 }
 
 .conversation,
-.action-panel,
-.conversation,
 .action-panel {
     margin-top: 0;
+}
+
+.action-panel {
+    position: relative;
+    z-index: 1;
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #e6e6e6;
+    padding: 12px 16px 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+
+.action-panel.full-height {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+}
+
+.hand-panel.no-conversation .action-panel {
+    background: #e8eaed;
+    min-height: 170px;
+    justify-content: center;
+}
+
+.action-panel:not(.requires-cards) {
+    border-top: 4px solid #111;
+}
+
+.action-panel.requires-cards {
+    border-top: 4px solid #25d366;
+}
+
+.action-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #54656f;
+}
+
+.action-summary-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+.action-summary-value {
+    color: #111;
 }
 
 .hand-panel {
@@ -217,13 +275,15 @@ main {
     transition: height 0.3s ease;
     background: white;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    z-index: 20;
 }
 
 .hand-panel.selecting {
     height: auto;
 }
 
-.hand-panel.selecting .hand-card {
+.hand-panel.selecting .hand-card,
+.hand-card.choice-card {
     width: 12rem;
     height: 8rem;
     font-size: 18px;
@@ -237,9 +297,15 @@ main {
     align-items: flex-start;
 }
 
-.conversation-list,
-.choice-list {
+.conversation-list {
     display: grid;
+    gap: 12px;
+}
+
+.choice-list {
+    display: flex;
+    overflow-x: auto;
+    flex-direction: row;
     gap: 12px;
 }
 
@@ -284,6 +350,27 @@ main {
 .action-row {
     display: grid;
     gap: 10px;
+}
+
+.input-counter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.char-counter {
+    align-self: flex-end;
+    font-size: 12px;
+    font-weight: 700;
+    color: #54656f;
+    background: rgba(250, 250, 250, 0.9);
+    border-radius: 999px;
+    padding: 4px 8px;
+    pointer-events: none;
+}
+
+.char-counter.over-limit {
+    color: #b00020;
 }
 
 .choice-button,

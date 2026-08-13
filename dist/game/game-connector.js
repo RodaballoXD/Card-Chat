@@ -42,7 +42,9 @@ export class GameConnector {
             });
         });
         socket.on("discardCard", (cardId) => {
-            this.expectType(cardId, "number", socket);
+            if (cardId !== null) {
+                this.expectType(cardId, "number", socket);
+            }
             this.handleAction(socket, () => {
                 this.game.discardCard(this.getPlayerId(socket), cardId);
             });
@@ -69,9 +71,10 @@ export class GameConnector {
     }
     tryStartGame() {
         const connectedCount = this.game.connectedPlayers().length;
-        if (connectedCount >= 1) { // TODO: Set to 3
+        if (connectedCount >= 3) {
             try {
                 this.game.startGame();
+                this.update();
             }
             catch (err) {
                 // If game cannot be started (already started or other), ignore.

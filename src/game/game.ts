@@ -96,7 +96,7 @@ export class Game {
     createConversation(id: number, text: string) {
         if (this.state.phase !== 'createCards') throw new Error(`Cannot create conversation in phase ${this.state.phase}`);
         if (!this.isCzar(id)) throw new Error(`Player with id ${id} is not the czar and cannot create conversation`);
-        if (text.length > 200) throw new Error(`Conversation text is too long`);
+        if (text.length > 100) throw new Error(`Conversation text is too long`);
 
         const creator = this.players.find((p) => (p.manager.id === id));
         if (!creator) throw new Error(`Player with id ${id} not found`);

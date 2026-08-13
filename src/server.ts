@@ -21,8 +21,15 @@ const httpServer = createServer(async (request, response) => {
         return serveFile(response, new URL("style.css", publicDirectory), "text/css; charset=utf-8");
     }
 
-    if (url === "/client/main.js") {
-        return serveFile(response, new URL("../dist/client/main.js", import.meta.url), "application/javascript; charset=utf-8");
+    if (url.startsWith("/client/") || url.startsWith("/shared/")) {
+        const assetPath = new URL(`../dist${url}`, import.meta.url);
+        const contentType = url.endsWith(".js")
+            ? "application/javascript; charset=utf-8"
+            : url.endsWith(".css")
+                ? "text/css; charset=utf-8"
+                : "application/octet-stream";
+
+        return serveFile(response, assetPath, contentType);
     }
 
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
