@@ -9,6 +9,11 @@ export class GameConnector {
         });
     }
     handleConnection(socket) {
+        socket.on("changeSetting", (setting, value) => {
+            this.handleAction(socket, () => {
+                this.game.changeSetting(setting, value);
+            });
+        });
         socket.on("joinGame", (name) => {
             this.expectType(name, "string", socket);
             this.joinGame(socket, name);
@@ -34,11 +39,7 @@ export class GameConnector {
         socket.on("chooseWinner", (cardId) => {
             this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
-                const playerId = this.getPlayerId(socket);
-                if (!this.game.isCzar(playerId)) {
-                    throw new Error("You are not the czar");
-                }
-                this.game.chooseWinnerCard(cardId);
+                this.game.chooseWinnerCard(this.getPlayerId(socket), cardId);
             });
         });
         socket.on("discardCard", (cardId) => {

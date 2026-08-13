@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { Game } from "./game.js";
-import { WinnerScreen } from "../shared/types.js";
+import { GameSettings, WinnerScreen } from "../shared/types.js";
 
 
 export class GameConnector {
@@ -18,10 +18,17 @@ export class GameConnector {
 
 
     private handleConnection(socket: Socket) {
+        socket.on("changeSetting", (setting: keyof GameSettings, value: unknown) => {
+            this.handleAction(socket, () => {
+                this.game.changeSetting(setting, value);
+            });
+        });
+
         socket.on("joinGame", (name: string) => {
             this.expectType(name, "string", socket);
             this.joinGame(socket, name);
         });
+
 
         socket.on("playCard", (cardId: number) => {
             this.expectType(cardId, "number", socket);
@@ -47,13 +54,10 @@ export class GameConnector {
         socket.on("chooseWinner", (cardId: number) => {
             this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
-                const playerId = this.getPlayerId(socket);
-
-                if (!this.game.isCzar(playerId)) {
-                    throw new Error("You are not the czar");
-                }
-
-                this.game.chooseWinnerCard(cardId);
+                this.game.chooseWinnerCard(
+                    this.getPlayerId(socket),
+                    cardId
+                );
             });
         });
 

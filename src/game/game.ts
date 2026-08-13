@@ -28,6 +28,31 @@ export class Game {
         this.connector = connector;
     }
 
+    changeSetting(setting: keyof GameSettings, value: unknown) {
+        if (this.state.phase !== null) throw new Error(`Cannot change settings after game has started`);
+
+        switch (setting) {
+            case 'czar':
+                if (value !== 'lastWinner' && value !== 'roundRobin' && value !== 'none') throw new Error(`Invalid czar setting value ${value}`);
+                this.settings.czar = value;
+                break;
+            case 'playerHandSize':
+                if (typeof value !== 'number' || value < 1) throw new Error(`Invalid playerHandSize setting value ${value}`);
+                this.settings.playerHandSize = value;
+                break;
+            case 'keepChat':
+                if (typeof value !== 'boolean') throw new Error(`Invalid keepChat setting value ${value}`);
+                this.settings.keepChat = value;
+                break;
+            case 'discardCardsEvery':
+                if (value !== null && (typeof value !== 'number' || value < 1)) throw new Error(`Invalid discardCardsEvery setting value ${value}`);
+                this.settings.discardCardsEvery = value;
+                break;
+            default:
+                throw new Error(`Unknown setting ${setting}`);
+        }
+    }
+
 
     startGame() {
         if (this.state.phase !== null) throw new Error(`Game has already started`);
@@ -51,8 +76,9 @@ export class Game {
         this.tryEndPlayCardsPhase();
     }
 
-    chooseWinnerCard(cardUuid: number) {
+    chooseWinnerCard(playerId: number, cardUuid: number) {
         if (this.state.phase !== 'chooseWinner') throw new Error(`Cannot choose winner card in phase ${this.state.phase}`);
+        if (!this.isCzar(playerId)) throw new Error(`Only the czar can choose the winner card`);
 
         const chooseState = this.state as ChooseWinnerPhase;
         const played = chooseState.playedCards || [];
@@ -61,14 +87,27 @@ export class Game {
 
         chooseState.winnerId = play.playerId;
 
-        const winner = this.players.find((p) => (p.manager.id === play.playerId));
+        const winner = this.players.find((p) => (p.manager.id === play.playerId))!;
         if (winner) winner.manager.winRound();
         const cardCreator = this.players.find((p) => (p.manager.id === play.card.creatorId));
         if (cardCreator) cardCreator.manager.winOwnCard();
 
+        const czar = this.players.find((p) => (p.manager.id === this.czarId))!;
+        let sender; let senderId;
+        if (this.settings.keepChat) {
+            sender = czar.manager.name;
+            senderId = czar.manager.id;
+        } else {
+            sender = winner.manager.name;
+            senderId = winner.manager.id;
+        }
+        this.conversation.push({ senderId, sender, text: `${play.card.content}` });
+
         this.connector?.sendWinnerScreen({
             conversation: this.conversation,
-            winnerCard: play.card
+            winnerCard: play.card,
+            winnerName: winner.manager.name,
+            creatorName: cardCreator?.manager.name ?? null
         });
         this.advanceGamePhase();
     }
@@ -170,6 +209,7 @@ export class Game {
                 phase: 'discardCard',
                 discardedCards: []
             };
+            this.conversation = [];
             this.connector?.update();
             return;
         }
@@ -181,6 +221,7 @@ export class Game {
                 createdCards: [],
                 cardsPerPlayer: (this.shouldDiscardCards()) ? 2 : undefined
             };
+            this.conversation = [];
             this.connector?.update();
             this.roundsCount++;
             return;
@@ -275,6 +316,8 @@ export class Game {
             this.connector?.sendWinnerScreen({
                 conversation: this.conversation,
                 winnerCard: null,
+                winnerName: null,
+                creatorName: null,
             });
         }
     }

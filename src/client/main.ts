@@ -1,13 +1,19 @@
 ﻿import { Message, Player, PlayerState } from "../shared/types.js";
 import { actionRequiresCards, canCreateCard, canDiscardCard, hasConversation } from "./state-helpers.js";
+import type { WinnerScreen } from "../shared/types.js";
 
 declare const io: typeof import("socket.io-client").io;
 
 const APP_EL = document.getElementById("app") as HTMLDivElement;
 const socket = io();
-let joinError = "";
 let selectedCardId: number | null = null;
 let selectableAction: string | null = null;
+let errorMessage = "";
+let errorTimeout: number | null = null;
+let winnerScreen: WinnerScreen | null = null;
+let winnerCloseEnabled = false;
+let winnerCloseTimeout: number | null = null;
+let ownPlayerName = "";
 
 if (!APP_EL) {
     throw new Error("Element with id 'app' not found");
@@ -24,18 +30,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("connect_error", (err) => {
         console.error("Connection error:", err);
+        showError(err.message);
     });
 
     socket.on("gameError", (error: { message: string }) => {
-        joinError = error?.message ?? "Server error";
-        renderJoinScreen();
-        bindJoinInteractions();
+        showError(error?.message ?? "Server error");
     });
 
     socket.on("gameState", (state: PlayerState) => {
-        joinError = "";
-        APP_EL.innerHTML = renderPlayerState(state);
+        ownPlayerName = getOwnPlayerName(state);
+        renderApp(renderPlayerState(state));
         bindInteractions(state);
+    });
+
+    socket.on("winnerScreen", (screen: WinnerScreen) => {
+        showWinnerScreen(screen);
     });
 
     renderJoinScreen();
@@ -45,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 function renderJoinScreen() {
-    APP_EL.innerHTML = `
+    renderApp(`
         <div class="join-screen">
             <div class="join-box">
                 <h1 class="join-title">Card Chat</h1>
@@ -53,10 +62,9 @@ function renderJoinScreen() {
                 <input class="join-input" data-action="join-name" type="text" placeholder="Your name" autocomplete="name" />
                 <button class="join-button" data-action="join-game">Join game</button>
                 <div class="join-note">The game starts automatically once 3 players are connected.</div>
-                ${joinError ? `<div class="join-error">${escapeHtml(joinError)}</div>` : ""}
             </div>
         </div>
-    `;
+    `);
 }
 
 
@@ -67,9 +75,13 @@ function bindJoinInteractions() {
             if (!input) return;
             const value = input.value.trim();
             if (!value) {
-                joinError = "Please enter a name.";
+                showError("Please enter a name.");
                 renderJoinScreen();
                 bindJoinInteractions();
+                return;
+            }
+            if (value.startsWith("/setting")) {
+                handleSettingsChangeCommand(value);
                 return;
             }
             socket.emit("joinGame", value);
@@ -146,28 +158,7 @@ function renderPlayerHeaderRow(player: Player, isOwn = false): string {
 
 function renderConversation(state: PlayerState): string {
     const messages = getConversationMessages(state.state);
-
-    if (!messages.length) {
-        return "";
-    }
-
-    const items = messages
-        .map((message) => `
-            <div class="conversation-item${message.sender === getOwnPlayerName(state) ? " self" : ""}">
-                <div class="conversation-sender">${escapeHtml(message.sender)}</div>
-                <div class="conversation-text">${escapeHtml(message.text)}</div>
-            </div>
-        `)
-        .join("");
-
-    return `
-        <section class="conversation">
-            <div class="section-title">Conversation</div>
-            <div class="conversation-list">
-                ${items}
-            </div>
-        </section>
-    `;
+    return renderConversationMessages(messages, ownPlayerName);
 }
 
 
@@ -450,6 +441,141 @@ function bindInteractions(state: PlayerState) {
 }
 
 
+function renderApp(content: string) {
+    APP_EL.innerHTML = content;
+    renderOverlayElements();
+}
+
+function renderOverlayElements() {
+    APP_EL.querySelectorAll(".error-toast, .winner-overlay").forEach((element) => element.remove());
+    const overlays = renderOverlays();
+    if (!overlays.trim()) return;
+
+    APP_EL.insertAdjacentHTML("beforeend", overlays);
+    bindOverlayInteractions();
+}
+
+function renderOverlays(): string {
+    return `
+        ${errorMessage ? renderErrorToast(errorMessage) : ""}
+        ${winnerScreen ? renderWinnerScreen(winnerScreen) : ""}
+    `;
+}
+
+function renderErrorToast(message: string): string {
+    return `
+        <div class="error-toast" role="alert">
+            ${escapeHtml(message)}
+        </div>
+    `;
+}
+
+function renderWinnerScreen(screen: WinnerScreen): string {
+    let winnerResult: string;
+
+    if (screen.winnerCard) {
+        const winnerName = screen.winnerName;
+        const creatorName = screen.creatorName;
+        winnerResult = `
+            <div class="winner-result">
+                <div class="winner-card-text">${escapeHtml(screen.winnerCard.content)}</div>
+                <div class="winner-line">🏆 ${escapeHtml(winnerName)}</div>
+                ${(creatorName)
+                    ? (`<div class="winner-line creator">🃏 ${escapeHtml(creatorName)}</div>`)
+                    : ""
+                }
+            </div>
+        `;
+    }
+    else {
+        winnerResult = `
+            <div class="winner-result">
+                <div class="winner-card-text">Czar left the game</div>
+                <div class="winner-line">No winner this round</div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="winner-overlay" role="dialog" aria-modal="true">
+            <div class="winner-screen">
+                <div class="winner-conversation">
+                    ${renderConversationMessages(screen.conversation, ownPlayerName)}
+                </div>
+                ${winnerResult}
+                <button class="winner-close" data-action="close-winner-screen" ${winnerCloseEnabled ? "" : "disabled"}>Close</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderConversationMessages(messages: Message[], currentPlayerName: string): string {
+    if (!messages.length) {
+        return "";
+    }
+
+    const items = messages
+        .map((message) => `
+            <div class="conversation-item${message.sender === currentPlayerName ? " self" : ""}">
+                <div class="conversation-sender">${escapeHtml(message.sender)}</div>
+                <div class="conversation-text">${escapeHtml(message.text)}</div>
+            </div>
+        `)
+        .join("");
+
+    return `
+        <section class="conversation">
+            <div class="section-title">Conversation</div>
+            <div class="conversation-list">
+                ${items}
+            </div>
+        </section>
+    `;
+}
+
+function bindOverlayInteractions() {
+    APP_EL.querySelectorAll("[data-action=close-winner-screen]").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (!winnerCloseEnabled) return;
+            winnerScreen = null;
+            renderOverlayElements();
+        });
+    });
+}
+
+function showError(message: string) {
+    errorMessage = message;
+
+    if (errorTimeout !== null) {
+        window.clearTimeout(errorTimeout);
+    }
+
+    errorTimeout = window.setTimeout(() => {
+        errorMessage = "";
+        errorTimeout = null;
+        renderOverlayElements();
+    }, 3500);
+
+    renderOverlayElements();
+}
+
+function showWinnerScreen(screen: WinnerScreen) {
+    winnerScreen = screen;
+    winnerCloseEnabled = false;
+
+    if (winnerCloseTimeout !== null) {
+        window.clearTimeout(winnerCloseTimeout);
+    }
+
+    winnerCloseTimeout = window.setTimeout(() => {
+        winnerCloseEnabled = true;
+        winnerCloseTimeout = null;
+        renderOverlayElements();
+    }, 1500);
+
+    renderOverlayElements();
+}
+
 
 function getOwnPlayerName(state: PlayerState): string {
     return state.players.find((player) => player.id === state.playerId)?.name ?? "";
@@ -471,4 +597,18 @@ function escapeHtml(text: string): string {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+
+
+function handleSettingsChangeCommand(command: string) {
+    try {
+        const settingsString = command.replace("/setting", "").trim();
+        const settings = JSON.parse(settingsString);
+        for (const key in settings) {
+            socket.emit("changeSettings", key, settings[key]);
+        }
+    } catch (error) {
+        showError((error instanceof Error) ? error.message : "Invalid settings command");
+    }
 }
