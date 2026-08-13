@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("gameError", (error: { message: string }) => {
         showError(error?.message ?? "Server error");
+        console.log("Game error:", error?.message ?? "Unknown error");
     });
 
     socket.on("gameState", (state: PlayerState) => {

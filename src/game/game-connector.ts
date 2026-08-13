@@ -20,7 +20,6 @@ export class GameConnector {
 
     private handleConnection(socket: Socket) {
         socket.on("changeSettings", (setting: keyof GameSettings, value: unknown) => {
-            console.log(`Received changeSetting: ${setting} = ${value}`);
             this.handleAction(socket, () => {
                 this.game.changeSetting(setting, value);
             });

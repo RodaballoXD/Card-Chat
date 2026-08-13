@@ -65,7 +65,6 @@ export class Game {
             default:
                 throw new Error(`Unknown setting ${setting}`);
         }
-        console.log(`Setting ${setting} changed to ${value}`);
     }
 
 
