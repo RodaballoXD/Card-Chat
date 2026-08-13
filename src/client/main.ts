@@ -1,10 +1,11 @@
 ﻿import { Message, Player, PlayerState } from "../shared/types.js";
 import { actionRequiresCards, canCreateCard, canDiscardCard, hasConversation } from "./state-helpers.js";
-import type { WinnerScreen } from "../shared/types.js";
+import type { CreateConversationStateCzar, WinnerScreen } from "../shared/types.js";
 
 declare const io: typeof import("socket.io-client").io;
 
 const APP_EL = document.getElementById("app") as HTMLDivElement;
+const PLAYER_UUID_KEY = "card-chat-player-uuid";
 const socket = io();
 let selectedCardId: number | null = null;
 let selectableAction: string | null = null;
@@ -22,6 +23,10 @@ if (!APP_EL) {
 document.addEventListener("DOMContentLoaded", () => {
     socket.on("connect", () => {
         console.log("Connected to server");
+        const playerUuid = localStorage.getItem(PLAYER_UUID_KEY);
+        if (playerUuid) {
+            socket.emit("reconnectGame", playerUuid);
+        }
     });
 
     socket.on("disconnect", () => {
@@ -41,6 +46,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ownPlayerName = getOwnPlayerName(state);
         renderApp(renderPlayerState(state));
         bindInteractions(state);
+    });
+
+    socket.on("joinRequired", () => {
+        clearStoredPlayer();
+        resetClientState();
+        renderJoinScreen();
+        bindJoinInteractions();
+    });
+
+    socket.on("gameReset", () => {
+        clearStoredPlayer();
+        resetClientState();
+        renderJoinScreen();
+        bindJoinInteractions();
     });
 
     socket.on("winnerScreen", (screen: WinnerScreen) => {
@@ -84,7 +103,10 @@ function bindJoinInteractions() {
                 handleSettingsChangeCommand(value);
                 return;
             }
-            socket.emit("joinGame", value);
+            socket.emit("joinGame", {
+                name: value,
+                playerUuid: getOrCreatePlayerUuid()
+            });
         });
     });
 
@@ -177,7 +199,7 @@ function getConversationMessages(state: PlayerState["state"]): Message[] {
 
 function renderActionSection(state: PlayerState): string {
     const ownPlayer = state.players.find((player) => player.id === state.playerId);
-    const phase = state.state?.phase ?? "waiting";
+    const phase = state.state?.phase;
     const isCzar = ownPlayer?.isCzar ?? false;
     const hasConversationState = hasConversation(state.state);
     const requiresCards = actionRequiresCards(state.state);
@@ -194,28 +216,27 @@ function renderActionSection(state: PlayerState): string {
             selectableAction = "play-card";
         }
     } else if (phase === "chooseWinner") {
-        if (isCzar) {
-            const choices = ((state.state as any).choices ?? []) as Array<{ uuid: number; content: string }>;
-            selectableAction = "choose-winner";
-            content = `
-                <div class="action-text">Choose a winning card.</div>
-                <div class="choice-list">
-                    ${choices
-                        .map(
-                            (choice) => `
-                                <button class="hand-card choice-card${selectedCardId === choice.uuid ? " selected" : ""}" data-action="select-card" data-card-id="${choice.uuid}">
-                                    <span class="hand-card-text">${escapeHtml(choice.content)}</span>
-                                </button>
-                            `
-                        )
-                        .join("")}
-                </div>
-                <button class="action-button" data-action="confirm-choice"}>Select</button>
-            `;
-        } else {
-            content = `<div class="action-text">Waiting for the czar to choose.</div>`;
-        }
-    } else if (phase === "createCards") {
+        const choices = ((state.state as any).choices ?? []) as Array<{ uuid: number; content: string }>;
+        selectableAction = "choose-winner";
+        content = `
+            <div class="action-text">Choose a winning card.</div>
+            <div class="choice-list">
+                ${choices
+                    .map(
+                        (choice) => `
+                            <button class="hand-card choice-card${selectedCardId === choice.uuid ? " selected" : ""}" data-action="select-card" data-card-id="${choice.uuid}">
+                                <span class="hand-card-text">${escapeHtml(choice.content)}</span>
+                            </button>
+                        `
+                    )
+                    .join("")}
+            </div>
+            <button class="action-button" data-action="confirm-choice"}>Select</button>
+        `;
+    } else if (phase === "awaitWinnerChoice") {
+        content = `<div class="action-text">Waiting for the czar to choose a winner.</div>`;
+    }
+    else if (phase === "createCards") {
         if (isCzar) {
             content = `<div class="action-text">You are the czar. Waiting for players to create cards.</div>`;
         } else {
@@ -233,20 +254,16 @@ function renderActionSection(state: PlayerState): string {
             `;
         }
     } else if (phase === "createConversation") {
-        if (isCzar) {
-            content = `
-                <div class="action-text">Write the new conversation starter.</div>
-                <div class="action-row">
-                    <div class="input-counter-wrap">
-                        <input class="action-input" data-action="create-conversation-input" type="text" maxlength="100" placeholder="Write a conversation" />
-                        <span class="char-counter" data-char-counter="create-conversation">0/100</span>
-                    </div>
-                    <button class="action-button" data-action="create-conversation">Send</button>
+        content = `
+            <div class="action-text">${(state.state as CreateConversationStateCzar).created ?? "Write a new starting message"}</div>
+            <div class="action-row">
+                <div class="input-counter-wrap">
+                    <input class="action-input" data-action="create-conversation-input" type="text" maxlength="100" placeholder="Write a conversation" />
+                    <span class="char-counter" data-char-counter="create-conversation">0/100</span>
                 </div>
-            `;
-        } else {
-            content = `<div class="action-text">Waiting for the czar to start the conversation.</div>`;
-        }
+                <button class="action-button" data-action="create-conversation">Send</button>
+            </div>
+        `;
     } else if (phase === "discardCard") {
         const canDiscard = canDiscardCard(state.state);
         content = `
@@ -574,6 +591,34 @@ function showWinnerScreen(screen: WinnerScreen) {
     }, 1500);
 
     renderOverlayElements();
+}
+
+function getOrCreatePlayerUuid(): string {
+    const existing = localStorage.getItem(PLAYER_UUID_KEY);
+    if (existing) return existing;
+
+    const uuid = (crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(PLAYER_UUID_KEY, uuid);
+    return uuid;
+}
+
+function clearStoredPlayer() {
+    localStorage.removeItem(PLAYER_UUID_KEY);
+}
+
+function resetClientState() {
+    selectedCardId = null;
+    selectableAction = null;
+    winnerScreen = null;
+    winnerCloseEnabled = false;
+    ownPlayerName = "";
+
+    if (winnerCloseTimeout !== null) {
+        window.clearTimeout(winnerCloseTimeout);
+        winnerCloseTimeout = null;
+    }
 }
 
 

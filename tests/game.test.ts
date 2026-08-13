@@ -39,7 +39,7 @@ function chooseWinner(game: Game, czar: any) {
     expect(state.phase).toBe('chooseWinner');
     expect(Array.isArray(state.choices)).toBe(true);
     expect(state.choices.length).toBeGreaterThan(0);
-    game.chooseWinnerCard(state.choices[0].uuid);
+    game.chooseWinnerCard(czar.id, state.choices[0].uuid);
 }
 
 function discardPhase(game: Game, players: any[]) {
@@ -167,5 +167,23 @@ describe('Game', () => {
 
         expect(() => game.createCard(nonCzar.id, 'x'.repeat(101))).toThrow();
         expect(() => game.createConversation(czar.id, 'x'.repeat(101))).toThrow();
+    });
+
+    it('resets all players and game progress', () => {
+        const players = [
+            game.connectPlayer('alice'),
+            game.connectPlayer('bob'),
+            game.connectPlayer('carol')
+        ];
+
+        game.startGame();
+        expect(game.hasStarted()).toBe(true);
+        expect(game.connectedPlayers()).toHaveLength(3);
+
+        game.reset();
+
+        expect(game.hasStarted()).toBe(false);
+        expect(game.connectedPlayers()).toHaveLength(0);
+        expect(() => game.playerState(players[0].id)).toThrow();
     });
 });

@@ -28,6 +28,20 @@ export class Game {
         this.connector = connector;
     }
 
+    hasStarted(): boolean {
+        return this.state.phase !== null;
+    }
+
+    reset() {
+        this.players = [];
+        this.idCount = 0;
+        this.state = { phase: null };
+        this.roundsCount = 1;
+        this.czarId = null;
+        this.conversation = [];
+        this.cardManager = new CardList();
+    }
+
     changeSetting(setting: keyof GameSettings, value: unknown) {
         if (this.state.phase !== null) throw new Error(`Cannot change settings after game has started`);
 
@@ -326,6 +340,7 @@ export class Game {
         const player = this.players.find((p) => (p.manager.id === id));
         if (!player) throw new Error(`Player with id ${id} not found`);
         player.isConnected = true;
+        return player.manager;
     }
 
     connectedPlayers(): PlayerData[] {

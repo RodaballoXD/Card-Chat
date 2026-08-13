@@ -4,6 +4,7 @@ export class GameConnector {
         this.game = game;
         this.playerSockets = new Map();
         this.socketPlayers = new Map();
+        this.playerUuids = new Map();
         io.on("connection", (socket) => {
             this.handleConnection(socket);
         });
@@ -14,9 +15,15 @@ export class GameConnector {
                 this.game.changeSetting(setting, value);
             });
         });
-        socket.on("joinGame", (name) => {
-            this.expectType(name, "string", socket);
-            this.joinGame(socket, name);
+        socket.on("joinGame", (data) => {
+            const joinData = this.parseJoinGameData(data, socket);
+            if (!joinData)
+                return;
+            this.joinGame(socket, joinData.name, joinData.playerUuid);
+        });
+        socket.on("reconnectGame", (playerUuid) => {
+            this.expectType(playerUuid, "string", socket);
+            this.reconnectGame(socket, playerUuid);
         });
         socket.on("playCard", (cardId) => {
             this.expectType(cardId, "number", socket);
@@ -54,20 +61,51 @@ export class GameConnector {
             this.handleDisconnect(socket);
         });
     }
-    joinGame(socket, name) {
+    joinGame(socket, name, playerUuid) {
         if (this.socketPlayers.has(socket.id)) {
             this.sendError(socket, "You are already in the game");
             return;
         }
         try {
+            if (this.playerUuids.has(playerUuid)) {
+                this.reconnectGame(socket, playerUuid);
+                return;
+            }
             const player = this.game.connectPlayer(name);
+            this.playerSockets.set(player.id, socket);
+            this.socketPlayers.set(socket.id, player.id);
+            this.playerUuids.set(playerUuid, player.id);
+            this.update();
+            this.tryStartGame();
+        }
+        catch (error) {
+            this.sendError(socket, error);
+        }
+    }
+    reconnectGame(socket, playerUuid) {
+        if (this.socketPlayers.has(socket.id)) {
+            this.sendError(socket, "You are already in the game");
+            return;
+        }
+        const playerId = this.playerUuids.get(playerUuid);
+        if (playerId === undefined) {
+            socket.emit("joinRequired");
+            return;
+        }
+        try {
+            const previousSocket = this.playerSockets.get(playerId);
+            if (previousSocket) {
+                this.socketPlayers.delete(previousSocket.id);
+            }
+            const player = this.game.reconnectPlayer(playerId);
             this.playerSockets.set(player.id, socket);
             this.socketPlayers.set(socket.id, player.id);
             this.update();
             this.tryStartGame();
         }
         catch (error) {
-            this.sendError(socket, error);
+            this.playerUuids.delete(playerUuid);
+            socket.emit("joinRequired");
         }
     }
     tryStartGame() {
@@ -86,15 +124,33 @@ export class GameConnector {
         const playerId = this.socketPlayers.get(socket.id);
         if (playerId === undefined)
             return;
+        if (this.playerSockets.get(playerId) !== socket) {
+            this.socketPlayers.delete(socket.id);
+            return;
+        }
         this.socketPlayers.delete(socket.id);
         this.playerSockets.delete(playerId);
         try {
             this.game.disconnectPlayer(playerId);
+            if (this.shouldResetGame()) {
+                this.resetGame();
+                return;
+            }
             this.update();
         }
         catch (error) {
             console.error("Error disconnecting player:", error);
         }
+    }
+    shouldResetGame() {
+        return this.game.hasStarted() && this.game.connectedPlayers().length <= 1;
+    }
+    resetGame() {
+        this.io.emit("gameReset");
+        this.playerSockets.clear();
+        this.socketPlayers.clear();
+        this.playerUuids.clear();
+        this.game.reset();
     }
     handleAction(socket, action) {
         try {
@@ -143,6 +199,28 @@ export class GameConnector {
             ? error.message
             : "Unknown error";
         socket.emit("gameError", { message });
+    }
+    parseJoinGameData(data, socket) {
+        if (typeof data === "string") {
+            this.sendError(socket, "Missing player UUID");
+            return null;
+        }
+        if (!data || typeof data !== "object") {
+            this.sendError(socket, "Invalid join data");
+            return null;
+        }
+        if (typeof data.name !== "string") {
+            this.sendError(socket, "Expected player name");
+            return null;
+        }
+        if (typeof data.playerUuid !== "string") {
+            this.sendError(socket, "Expected player UUID");
+            return null;
+        }
+        return {
+            name: data.name.trim(),
+            playerUuid: data.playerUuid.trim()
+        };
     }
 }
 //# sourceMappingURL=game-connector.js.map
