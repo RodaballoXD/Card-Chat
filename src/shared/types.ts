@@ -25,52 +25,61 @@ export interface PlayedCard {
 
 export interface PlayerState {
     playerId: number;
-    players: {
-        id: number;
-        name: string;
-        isConnected: boolean;
-        isCzar: boolean;
-        roundsWon: number;
-        winningCards: number;
-    }[];
+    players: Player[];
     hand: Card[];
     state: PlayCardState | ChooseWinnerStateCzar | ChooseWinnerStateNormal | CreateCardsState | CreateConversationStateCzar | DiscardCardState | null;
 }
 
-interface PlayCardState {
+export interface Player {
+    id: number;
+    name: string;
+    isConnected: boolean;
+    isCzar: boolean;
+    roundsWon: number;
+    winningCards: number;
+}
+
+export interface PlayCardState {
     phase: 'playCards';
     conversation: Message[];
     played: Card | null;
 }
 
-interface ChooseWinnerStateCzar {
+export interface ChooseWinnerStateCzar {
     phase: 'chooseWinner';
     conversation: Message[];
     choices: Card[];
 }
 
-interface ChooseWinnerStateNormal {
+export interface ChooseWinnerStateNormal {
     phase: 'awaitWinnerChoice';
     conversation: Message[];
 }
 
-interface CreateCardsState {
+export interface CreateCardsState {
     phase: 'createCards';
     amount: number;
     created: Card[];
 }
 
-interface CreateConversationStateCzar {
+export interface CreateConversationStateCzar {
     phase: 'createConversation';
     created: Message | null;
 }
 
-interface DiscardCardState {
+export interface DiscardCardState {
     phase: 'discardCard';
     discarded: Card | null | 'none';
 }
 
 export interface Message {
+    senderId: number | null;
     sender: string;
     text: string;
+}
+
+
+export interface WinnerScreen {
+    conversation: Message[];
+    winnerCard: Card | null;
 }

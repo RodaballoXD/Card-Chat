@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { Game } from "./game.js";
+import { WinnerScreen } from "../shared/types.js";
 
 
 export class GameConnector {
@@ -33,6 +34,13 @@ export class GameConnector {
             this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
                 this.game.createCard(this.getPlayerId(socket), text);
+            });
+        });
+
+        socket.on("createConversation", (text: string) => {
+            this.expectType(text, "string", socket);
+            this.handleAction(socket, () => {
+                this.game.createConversation(this.getPlayerId(socket), text);
             });
         });
 
@@ -87,7 +95,7 @@ export class GameConnector {
 
     private tryStartGame() {
         const connectedCount = this.game.connectedPlayers().length;
-        if (connectedCount >= 3) {
+        if (connectedCount >= 1) { // TODO: Set to 3
             try {
                 this.game.startGame();
             } catch (err) {
@@ -138,6 +146,19 @@ export class GameConnector {
             } catch (error) {
                 console.error(
                     `Could not create state for player ${playerId}:`,
+                    error
+                );
+            }
+        }
+    }
+
+    sendWinnerScreen(screen: WinnerScreen) {
+        for (const [playerId, socket] of this.playerSockets) {
+            try {
+                socket.emit("winnerScreen", screen);
+            } catch (error) {
+                console.error(
+                    `Could not send winner screen to player ${playerId}:`,
                     error
                 );
             }

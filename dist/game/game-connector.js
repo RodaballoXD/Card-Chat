@@ -10,30 +10,29 @@ export class GameConnector {
     }
     handleConnection(socket) {
         socket.on("joinGame", (name) => {
+            this.expectType(name, "string", socket);
             this.joinGame(socket, name);
         });
-        // simple debug message for testing from client
-        socket.on("debugMessage", (payload) => {
-            try {
-                console.log(`Received debugMessage from ${socket.id}:`, payload);
-                // Echo back to the sender so the client can verify round-trip
-                socket.emit("debugEcho", payload);
-            }
-            catch (err) {
-                console.error("Error handling debugMessage:", err);
-            }
-        });
         socket.on("playCard", (cardId) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 this.game.playCard(this.getPlayerId(socket), cardId);
             });
         });
         socket.on("createCard", (text) => {
+            this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
                 this.game.createCard(this.getPlayerId(socket), text);
             });
         });
+        socket.on("createConversation", (text) => {
+            this.expectType(text, "string", socket);
+            this.handleAction(socket, () => {
+                this.game.createConversation(this.getPlayerId(socket), text);
+            });
+        });
         socket.on("chooseWinner", (cardId) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 const playerId = this.getPlayerId(socket);
                 if (!this.game.isCzar(playerId)) {
@@ -43,6 +42,7 @@ export class GameConnector {
             });
         });
         socket.on("discardCard", (cardId) => {
+            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
                 this.game.discardCard(this.getPlayerId(socket), cardId);
             });
@@ -69,7 +69,7 @@ export class GameConnector {
     }
     tryStartGame() {
         const connectedCount = this.game.connectedPlayers().length;
-        if (connectedCount >= 3) {
+        if (connectedCount >= 1) { // TODO: Set to 3
             try {
                 this.game.startGame();
             }
@@ -101,6 +101,11 @@ export class GameConnector {
             this.sendError(socket, error);
         }
     }
+    expectType(value, type, socket) {
+        if (typeof value !== type) {
+            this.sendError(socket, `Expected ${type}, got ${typeof value}`);
+        }
+    }
     update() {
         for (const [playerId, socket] of this.playerSockets) {
             try {
@@ -109,6 +114,16 @@ export class GameConnector {
             }
             catch (error) {
                 console.error(`Could not create state for player ${playerId}:`, error);
+            }
+        }
+    }
+    sendWinnerScreen(screen) {
+        for (const [playerId, socket] of this.playerSockets) {
+            try {
+                socket.emit("winnerScreen", screen);
+            }
+            catch (error) {
+                console.error(`Could not send winner screen to player ${playerId}:`, error);
             }
         }
     }

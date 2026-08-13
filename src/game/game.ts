@@ -31,6 +31,7 @@ export class Game {
 
     startGame() {
         if (this.state.phase !== null) throw new Error(`Game has already started`);
+        if (!this.settings.keepChat) this.conversation = [{ senderId: null, sender: 'Card Chat', text: this.cardManager.startingMessage() }];
         this.advanceGamePhase();
     }
     
@@ -65,6 +66,10 @@ export class Game {
         const cardCreator = this.players.find((p) => (p.manager.id === play.card.creatorId));
         if (cardCreator) cardCreator.manager.winOwnCard();
 
+        this.connector?.sendWinnerScreen({
+            conversation: this.conversation,
+            winnerCard: play.card
+        });
         this.advanceGamePhase();
     }
 
@@ -85,16 +90,7 @@ export class Game {
         };
         this.state.createdCards.push(card);
 
-        const state = this.state;
-        const creatingPlayers = this.connectedPlayers().filter((p) => (!this.isCzar(p.manager.id)));
-        const allHaveCreated = creatingPlayers.every((p) => {
-            const createdByIdCount = state.createdCards.filter((c) => (c.creatorId === p.manager.id)).length;
-            return (createdByIdCount >= (state.cardsPerPlayer ?? 1));
-        });
-        if (allHaveCreated) {
-            this.dealCards();
-            this.advanceGamePhase();
-        }
+        this.tryEndCreateCardsPhase();
     }
 
     createConversation(id: number, text: string) {
@@ -106,12 +102,13 @@ export class Game {
         if (!creator) throw new Error(`Player with id ${id} not found`);
 
         const message: Message = {
+            senderId: creator.manager.id,
             sender: creator.manager.name,
             text
         };
         this.conversation = [message];
 
-        this.tryEndPlayCardsPhase();
+        this.tryEndCreateCardsPhase();
     }
 
     discardCard(playerId: number, cardUuid: number | null) {
@@ -144,9 +141,11 @@ export class Game {
 
     private advanceGamePhase() {
         const currentPhase = this.state.phase;
-        if (currentPhase === null || currentPhase === 'createCards') {            if (currentPhase === null && this.czarId === null && this.settings.czar !== 'none' && this.players.length > 0) {
+        if (currentPhase === null || currentPhase === 'createCards') {
+            if (currentPhase === null && this.czarId === null && this.settings.czar !== 'none' && this.players.length > 0) {
                 this.czarId = Math.min(...this.players.map((p) => p.manager.id));
-            }            this.state = {
+            }
+            this.state = {
                 phase: 'playCards',
                 playedCards: []
             };
@@ -199,7 +198,22 @@ export class Game {
         const playedCards = (this.state as PlayCardsPhase).playedCards;
         const playingPlayers = this.connectedPlayers().filter((p) => (!this.isCzar(p.manager.id)));
         const allHavePlayed = playingPlayers.every((p) => (playedCards.some((c) => (c.playerId === p.manager.id))));
-        if (allHavePlayed && (this.conversation.length !== 0)) {
+        if (allHavePlayed) {
+            this.advanceGamePhase();
+        }
+    }
+
+    private tryEndCreateCardsPhase() {
+        if (this.state.phase !== 'createCards') throw new Error(`Cannot check create cards phase in phase ${this.state.phase}`);
+        const state = this.state;
+        const creatingPlayers = this.connectedPlayers().filter((p) => (!this.isCzar(p.manager.id)));
+        const allHaveCreated = creatingPlayers.every((p) => {
+            const createdByIdCount = state.createdCards.filter((c) => (c.creatorId === p.manager.id)).length;
+            return (createdByIdCount >= (state.cardsPerPlayer ?? 1));
+        });
+        const conversationIsCreated = (this.settings.keepChat || this.conversation.length > 0);
+        if (allHaveCreated && conversationIsCreated) {
+            this.dealCards();
             this.advanceGamePhase();
         }
     }
@@ -252,6 +266,17 @@ export class Game {
         const player = this.players.find((p) => (p.manager.id === id));
         if (!player) throw new Error(`Player with id ${id} not found`);
         player.isConnected = false;
+        if (this.isCzar(id)) {
+            this.state = {
+                phase: 'createCards',
+                createdCards: []
+            };
+            this.connector?.update();
+            this.connector?.sendWinnerScreen({
+                conversation: this.conversation,
+                winnerCard: null,
+            });
+        }
     }
 
     reconnectPlayer(id: number) {
@@ -268,7 +293,7 @@ export class Game {
         const player = this.players.find((p) => (p.manager.id === playerId));
         if (!player) throw new Error(`Player with id ${playerId} not found`);
 
-        const players: PlayerState['players'] = this.players.map((p) => ({
+        const players: PlayerState['players'] = this.connectedPlayers().map((p) => ({
             id: p.manager.id,
             name: p.manager.name,
             isConnected: p.isConnected,
