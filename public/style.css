@@ -33,8 +33,7 @@ main {
     min-height: 100vh;
 }
 
-.join-screen,
-.player-state {
+.join-screen {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -45,19 +44,19 @@ main {
 }
 
 .player-state {
-    padding: 0;
-    height: 100vh;
-    position: relative;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
 }
 
 .player-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
     padding: 16px;
-    padding-bottom: 24px;
 }
 
 .player-body.no-conversation {
@@ -281,25 +280,19 @@ main {
 }
 
 .hand-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 16px;
+    flex-shrink: 0;
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     border-radius: 24px 24px 0 0;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     transition: height 0.3s ease;
     background: white;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
-    z-index: 20;
-}
-
-.hand-panel.selecting {
-    height: auto;
 }
 
 .hand-panel.selecting .hand-card,

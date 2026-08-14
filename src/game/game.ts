@@ -227,7 +227,7 @@ export class Game {
                 phase: 'discardCard',
                 discardedCards: []
             };
-            if (this.settings.keepChat) this.conversation = [];
+            if (!this.settings.keepChat) this.conversation = [];
             this.connector?.update();
             return;
         }
@@ -239,7 +239,7 @@ export class Game {
                 createdCards: [],
                 cardsPerPlayer: (this.shouldDiscardCards()) ? 2 : undefined
             };
-            this.conversation = [];
+            if (!this.settings.keepChat) this.conversation = [];
             this.connector?.update();
             this.roundsCount++;
             return;

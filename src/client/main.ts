@@ -45,9 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("gameState", (state: PlayerState) => {
         console.log(`Recieved gameState: ${JSON.stringify(state)}`);
+
         const interactiveState = captureInteractiveState();
+
         ownPlayerName = getOwnPlayerName(state);
+        selectableAction = getSelectableAction(state);
+
         renderApp(renderPlayerState(state));
+
         restoreInteractiveState(interactiveState);
         bindInteractions(state);
     });
@@ -203,12 +208,11 @@ function getConversationMessages(state: PlayerState["state"]): Message[] {
 
 function renderActionSection(state: PlayerState): string {
     const ownPlayer = state.players.find((player) => player.id === state.playerId);
-    const phase = state.state?.phase;
+    const phase = state.state.phase;
     const isCzar = ownPlayer?.isCzar ?? false;
     const hasConversationState = hasConversation(state.state);
     const requiresCards = actionRequiresCards(state.state);
     let content = "";
-    selectableAction = null;
 
     if (phase === "playCards") {
         if (isCzar) {
@@ -217,11 +221,9 @@ function renderActionSection(state: PlayerState): string {
             content = `<div class="action-text">Carta jugada. Esperando al zar.</div>`;
         } else {
             content = `<div class="action-text">Elige una carta para jugarla.</div>`;
-            selectableAction = "play-card";
         }
     } else if (phase === "chooseWinner") {
         const choices = ((state.state as ChooseWinnerStateCzar).choices ?? []);
-        selectableAction = "choose-winner";
         content = `
             <div class="action-text">Elige la carta ganadora.</div>
             <div class="choice-list">
@@ -270,9 +272,6 @@ function renderActionSection(state: PlayerState): string {
             <div class="action-text">Descarta una carta o conserva tu mano.</div>
             <button class="action-button" data-action="keep-cards" ${canDiscard ? "" : "disabled"}>Conservar mano</button>
         `;
-        if (canDiscard) {
-            selectableAction = "discard-card";
-        }
     } else {
         content = `<div class="action-text">${state.state.text}</div>`;
     }
@@ -326,11 +325,14 @@ function renderHand(state: PlayerState): string {
     const hand = state.hand;
     const ownPlayer = state.players.find((player) => player.id === state.playerId);
     const isCzar = ownPlayer?.isCzar ?? false;
+
+    const actionPanel = renderActionSection(state);
+
     const mayPlay = selectableAction === "play-card" && !isCzar && !(state.state as any).played;
     const mayDiscard = selectableAction === "discard-card";
     const isSelecting = mayPlay || mayDiscard;
+    
     const showConversation = hasConversation(state.state);
-    const actionPanel = renderActionSection(state);
 
     if (!hand.length) {
         return `
@@ -354,6 +356,28 @@ function renderHand(state: PlayerState): string {
             </div>
         </section>
     `;
+}
+
+
+function getSelectableAction(state: PlayerState): string | null {
+    const ownPlayer = state.players.find((player) => player.id === state.playerId);
+    const phase = state.state?.phase;
+
+    if (phase === "playCards") {
+        if (ownPlayer?.isCzar) return null;
+        if ((state.state as PlayCardState).played) return null;
+        return "play-card";
+    }
+
+    if (phase === "chooseWinner") {
+        return "choose-winner";
+    }
+
+    if (phase === "discardCard") {
+        return canDiscardCard(state.state) ? "discard-card" : null;
+    }
+
+    return null;
 }
 
 
