@@ -279,10 +279,11 @@ export class Game {
 
     private newCzar() {
         const isWinner = (this.settings.czar === 'lastWinner');
-
         if (isWinner && (this.state.phase === 'chooseWinner')) {
             this.czarId = this.state.winnerId;
+            return;
         }
+
         const currentId = this.czarId ?? -1;
         let best: number | null = null;
         // Find smallest that is bigger than `currentId`
@@ -293,7 +294,7 @@ export class Game {
             }
         }
         if (best === null) {
-            best = Math.min(...this.players.map((p) => p.manager.id));
+            best = Math.min(...this.connectedPlayers().map((p) => p.manager.id));
         }
         this.czarId = best;
     }

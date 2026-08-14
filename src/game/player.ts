@@ -15,7 +15,7 @@ export class PlayerManager {
     }
 
     setHand(hand: Card[]) {
-        this.hand = hand;
+        this.hand = [...hand];
     }
     giveCard(card: Card) {
         this.hand.push(card);
