@@ -326,11 +326,14 @@ main {
     background: #f0f2f5;
     padding: 14px 16px;
     border-radius: 18px;
+    margin-right: 36px;
 }
 
 .conversation-item.self {
     background: #dcf8c6;
     align-self: flex-end;
+    margin-right: 0;
+    margin-left: 36px;
 }
 
 .conversation-sender {
@@ -427,16 +430,6 @@ main {
 .hand-card.selected {
     background: #25d366;
     color: white;
-}
-
-.hand-card[data-action="play-card"] {
-    border-color: #25d366;
-}
-
-.hand-card[data-action="discard-card"] {
-    background: #fff4e5;
-    color: #6b4a1d;
-    border-color: #f1c27d;
 }
 
 .hand-confirm {
