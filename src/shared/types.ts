@@ -7,7 +7,7 @@ export interface Card {
 export interface GameSettings {
     playerHandSize?: number; // Default = 5
     keepChat?: boolean; // Whether rounds get the chat from the previous one or starts over with a new starting message
-    czar: 'lastWinner' | 'roundRobin' | 'none'; // Who decides the winner card. Starts at a random player. `'none'` means `'roundRobin'`, but asks the client for everyone to vote
+    czar: 'lastWinner' | 'roundRobin' ; // Who decides the winner card.
     discardCardsEvery?: number | null; // If falsey, don't discard cards ever. Otherwise, discard and create 1 extra card every N rounds
 
     // Not implemented:
@@ -29,7 +29,7 @@ export interface PlayerState {
     playerId: number;
     players: Player[];
     hand: Card[];
-    state: PlayCardState | ChooseWinnerStateCzar | ChooseWinnerStateNormal | CreateCardsState | CreateConversationStateCzar | DiscardCardState | null;
+    state: PlayCardState | ChooseWinnerStateCzar | ChooseWinnerStateNormal | CreateCardsState | CreateConversationStateCzar | DiscardCardState | WaitingScreen;
 }
 
 export interface Player {
@@ -72,6 +72,11 @@ export interface CreateConversationStateCzar {
 export interface DiscardCardState {
     phase: 'discardCard';
     discarded: Card | null | 'none';
+}
+
+export interface WaitingScreen {
+    phase: 'wait';
+    text: string;
 }
 
 export interface Message {

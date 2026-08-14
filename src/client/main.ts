@@ -241,22 +241,18 @@ function renderActionSection(state: PlayerState): string {
         content = `<div class="action-text">Esperando a que el zar elija un ganador.</div>`;
     }
     else if (phase === "createCards") {
-        if (isCzar) {
-            content = `<div class="action-text">Eres el zar. Esperando a que los jugadores creen cartas.</div>`;
-        } else {
-            const amount = (state.state as CreateCardsState).amount ?? 1;
-            const canCreate = canCreateCard(state.state);
-            content = `
-                <div class="action-text">Crea ${amount} carta${amount === 1 ? "" : "s"}.</div>
-                <div class="action-row">
-                    <div class="input-counter-wrap">
-                        <input class="action-input" data-action="create-card-input" type="text" maxlength="100" placeholder="Escribe una carta" ${canCreate ? "" : "disabled"} />
-                        <span class="char-counter" data-char-counter="create-card">0/100</span>
-                    </div>
-                    <button class="action-button" data-action="create-card" ${canCreate ? "" : "disabled"}>Crear</button>
+        const amount = (state.state as CreateCardsState).amount ?? 1;
+        const canCreate = canCreateCard(state.state);
+        content = `
+            <div class="action-text">Crea ${amount} carta${amount === 1 ? "" : "s"}.</div>
+            <div class="action-row">
+                <div class="input-counter-wrap">
+                    <input class="action-input" data-action="create-card-input" type="text" maxlength="100" placeholder="Escribe una carta" ${canCreate ? "" : "disabled"} />
+                    <span class="char-counter" data-char-counter="create-card">0/100</span>
                 </div>
-            `;
-        }
+                <button class="action-button" data-action="create-card" ${canCreate ? "" : "disabled"}>Crear</button>
+            </div>
+        `;
     } else if (phase === "createConversation") {
         content = `
             <div class="action-text">${(state.state as CreateConversationStateCzar).created ? state.state!.created!.text : "Escribe un nuevo mensaje inicial"}</div>
@@ -278,7 +274,7 @@ function renderActionSection(state: PlayerState): string {
             selectableAction = "discard-card";
         }
     } else {
-        content = `<div class="action-text">Esperando a que empiece la partida.</div>`;
+        content = `<div class="action-text">${state.state.text}</div>`;
     }
 
     const actionSummary = renderActionSummary(state);

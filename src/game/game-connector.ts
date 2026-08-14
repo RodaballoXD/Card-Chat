@@ -33,9 +33,9 @@ export class GameConnector {
         });
 
         socket.on("reconnectGame", (playerUuid: string) => {
-            this.expectType(playerUuid, "string", socket);
             this.reconnectGame(socket, playerUuid);
             try {
+                this.expectType(playerUuid, "string");
                 this.update({ playerId: this.getPlayerId(socket), socket });
             } catch {
                 // there was no player with that socket
@@ -43,29 +43,29 @@ export class GameConnector {
         });
 
         socket.on("playCard", (cardId: number) => {
-            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
+                this.expectType(cardId, "number");
                 this.game.playCard(this.getPlayerId(socket), cardId);
             }, true);
         });
 
         socket.on("createCard", (text: string) => {
-            this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
+                this.expectType(text, "string");
                 this.game.createCard(this.getPlayerId(socket), text);
             }, true);
         });
 
         socket.on("createConversation", (text: string) => {
-            this.expectType(text, "string", socket);
             this.handleAction(socket, () => {
+                this.expectType(text, "string");
                 this.game.createConversation(this.getPlayerId(socket), text);
             }, true);
         });
 
         socket.on("chooseWinner", (cardId: number) => {
-            this.expectType(cardId, "number", socket);
             this.handleAction(socket, () => {
+                this.expectType(cardId, "number");
                 this.game.chooseWinnerCard(
                     this.getPlayerId(socket),
                     cardId
@@ -74,10 +74,10 @@ export class GameConnector {
         });
 
         socket.on("discardCard", (cardId: number | null) => {
-            if (cardId !== null) {
-                this.expectType(cardId, "number", socket);
-            }
             this.handleAction(socket, () => {
+                if (cardId !== null) {
+                    this.expectType(cardId, "number");
+                }
                 this.game.discardCard(
                     this.getPlayerId(socket),
                     cardId
@@ -205,9 +205,9 @@ export class GameConnector {
         }
     }
 
-    private expectType(value: unknown, type: string, socket: Socket) {
+    private expectType(value: unknown, type: string) {
         if (typeof value !== type) {
-            this.sendError(socket, `Expected ${type}, got ${typeof value}`);
+            throw new Error(`Expected value ${value} to be of type ${type}`);
         }
     }
 

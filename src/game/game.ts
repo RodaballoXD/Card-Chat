@@ -18,6 +18,7 @@ export class Game {
     private cardManager = new CardList();
 
     private connector: GameConnector | null;
+    private czarDisconnectTimeout: NodeJS.Timeout | undefined = undefined;
 
     constructor(settings: GameSettings, connector: GameConnector | null) {
         this.settings = settings;
@@ -41,6 +42,7 @@ export class Game {
         this.conversation = [];
         this.cardManager = new CardList();
         this.settings = { czar: 'roundRobin' };
+        if (this.czarDisconnectTimeout) clearTimeout(this.czarDisconnectTimeout);
     }
 
     changeSetting(setting: keyof GameSettings, value: unknown) {
@@ -48,7 +50,7 @@ export class Game {
 
         switch (setting) {
             case 'czar':
-                if (value !== 'lastWinner' && value !== 'roundRobin' && value !== 'none') throw new Error(`Invalid czar setting value ${value}`);
+                if (value !== 'lastWinner' && value !== 'roundRobin' ) throw new Error(`Invalid czar setting value ${value}`);
                 this.settings.czar = value;
                 break;
             case 'playerHandSize':
@@ -197,7 +199,7 @@ export class Game {
         const currentPhase = this.state.phase;
         
         if (currentPhase === null || currentPhase === 'createCards') {
-            if (currentPhase === null && this.czarId === null && this.settings.czar !== 'none' && this.players.length > 0) {
+            if (currentPhase === null && this.czarId === null && this.players.length > 0) {
                 this.czarId = Math.min(...this.players.map((p) => p.manager.id));
             }
             this.state = {
@@ -276,10 +278,9 @@ export class Game {
     }
 
     private newCzar() {
-        if (this.state.phase !== 'chooseWinner') throw new Error(`Cannot set czar in phase ${this.state.phase}`);
-
         const isWinner = (this.settings.czar === 'lastWinner');
-        if (isWinner) {
+
+        if (isWinner && (this.state.phase === 'chooseWinner')) {
             this.czarId = this.state.winnerId;
         }
         const currentId = this.czarId ?? -1;
@@ -324,21 +325,18 @@ export class Game {
         if (!player) throw new Error(`Player with id ${id} not found`);
         player.isConnected = false;
         if (this.isCzar(id)) {
-            this.state = {
-                phase: 'createCards',
-                createdCards: []
-            };
-            this.connector?.update();
-            this.connector?.sendWinnerScreen({
-                conversation: this.conversation,
-                winnerCard: null,
-                winnerName: null,
-                creatorName: null,
-            });
+            this.czarDisconnectTimeout = setTimeout(() => {
+                this.state = { phase: 'createCards', createdCards: [] };
+                if (!this.settings.keepChat) this.conversation = [];
+                this.newCzar();
+                this.connector?.update();
+                this.connector?.sendWinnerScreen({ conversation: this.conversation, winnerCard: null, winnerName: null, creatorName: null });
+            }, 10000);
         }
     }
 
     reconnectPlayer(id: number) {
+        if (this.isCzar(id)) clearTimeout(this.czarDisconnectTimeout);
         const player = this.players.find((p) => (p.manager.id === id));
         if (!player) throw new Error(`Player with id ${id} not found`);
         player.isConnected = true;
@@ -369,7 +367,7 @@ export class Game {
             const played = phaseState.playedCards.find((p) => (p.playerId === playerId));
             state = {
                 phase: 'playCards',
-                conversation: this.conversation,
+                conversation: [...this.conversation],
                 played: (played) ? played.card : null
             };
             return { playerId, players, hand: player.manager.getHand(), state };
@@ -380,13 +378,13 @@ export class Game {
             if (this.isCzar(playerId)) {
                 state = {
                     phase: 'chooseWinner',
-                    conversation: this.conversation,
-                    choices: phaseState.playedCards.map((p) => p.card)
+                    conversation: [...this.conversation],
+                    choices: [...phaseState.playedCards.map((p) => p.card)]
                 };
             } else {
                 state = {
                     phase: 'awaitWinnerChoice',
-                    conversation: this.conversation
+                    conversation: [...this.conversation]
                 };
             }
             return { playerId, players, hand: player.manager.getHand(), state };
@@ -396,7 +394,10 @@ export class Game {
             const phaseState = this.state as CreateCardsPhase;
             const created = phaseState.createdCards.filter((c) => (c.creatorId === playerId));
             if (this.isCzar(playerId)) {
-                if (this.settings.keepChat) state = null;
+                if (this.settings.keepChat) state = {
+                    phase: 'wait',
+                    text: 'Esperando a que los jugadores creen cartas'
+                };
                 else state = {
                     phase: 'createConversation',
                     created: (this.conversation.length > 0) ? this.conversation[0] : null
@@ -408,19 +409,19 @@ export class Game {
                     created
                 };
             }
-            return { playerId, players, hand: player.manager.getHand(), state };
+            return { playerId, players, hand: [...player.manager.getHand()], state };
         }
 
         if (this.state.phase === 'discardCard') {
             const phaseState = this.state as DiscardCardPhase;
             const discarded = phaseState.discardedCards.find((d) => (d.discarderId === playerId));
-            return { playerId, players, hand: player.manager.getHand(), state: {
+            return { playerId, players, hand: [...player.manager.getHand()], state: {
                 phase: 'discardCard',
                 discarded: (discarded === undefined) ? null : (discarded.card ?? 'none')
-            }};
+            } };
         }
 
-        return { playerId, players, hand: player.manager.getHand(), state: null };
+        return { playerId, players, hand: [...player.manager.getHand()], state: { phase: 'wait', text: 'Esperando a que inicie la partida. Se requieren 3 jugadores' } };
     }
 }
 
