@@ -1,7 +1,7 @@
 import type { Card, GameSettings, Message, PlayedCard, PlayerState } from "../shared/types.js";
 import { PlayerManager } from "./player.js";
 import { shuffle } from "../shared/helpers.js";
-import { CardList } from "./card-list.js";
+import { CardList } from "../cards/card-list.js";
 import type { GameConnector } from "./game-connector.js";
 
 
