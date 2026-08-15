@@ -61,7 +61,7 @@ export const PRESET_CARDS: string[] = [
     "Lo haces muy bien para tener 8 años",
     "Tú sabes que este chat es el grupo, ¿verdad?",
     "Reseña honesta: tu madre está muy cara para lo que ofrece",
-    ""
+    // TODO: Add more cards
 ];
 
 export const PRESET_STARTERS: string[] = [
@@ -145,8 +145,3 @@ export const PRESET_STARTERS: string[] = [
     "Creo que he sido elegido.",
     "No sé por qué, pero el champú tiene mi contraseña."
 ];
-
-for (const text of [...PRESET_CARDS, ...PRESET_STARTERS]) {
-    console.log(text.length, text);
-    if (text.length > 100) throw new Error(`Card ${text} exceeds character limit`);
-}

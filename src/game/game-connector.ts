@@ -46,21 +46,21 @@ export class GameConnector {
             this.handleAction(socket, () => {
                 this.expectType(cardId, "number");
                 this.game.playCard(this.getPlayerId(socket), cardId);
-            }, true);
+            });
         });
 
         socket.on("createCard", (text: string) => {
             this.handleAction(socket, () => {
                 this.expectType(text, "string");
                 this.game.createCard(this.getPlayerId(socket), text);
-            }, true);
+            });
         });
 
         socket.on("createConversation", (text: string) => {
             this.handleAction(socket, () => {
                 this.expectType(text, "string");
                 this.game.createConversation(this.getPlayerId(socket), text);
-            }, true);
+            });
         });
 
         socket.on("chooseWinner", (cardId: number) => {
@@ -82,7 +82,7 @@ export class GameConnector {
                     this.getPlayerId(socket),
                     cardId
                 );
-            }, true);
+            });
         });
 
         socket.on("disconnect", () => {

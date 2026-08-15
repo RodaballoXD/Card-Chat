@@ -210,6 +210,37 @@ main {
     opacity: 0.9;
 }
 
+.player-action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+}
+
+.player-action-done {
+    color: #075e54;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.loader {
+    width: 5px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    animation: l5 1s infinite linear alternate;
+    opacity: 50%;
+}
+
+/* TODO: Instead of modifying transparency, go from black to white so that it works on dark mode too */
+@keyframes l5 {
+    0% { box-shadow: 10px 0 #000, -10px 0 #0002; background: #000 }
+    33% { box-shadow: 10px 0 #000, -10px 0 #0002; background: #0002 }
+    66% { box-shadow: 10px 0 #0002, -10px 0 #000; background: #0002 }
+    100% { box-shadow: 10px 0 #0002, -10px 0 #000; background: #000 }
+}
+
 .section-title {
     font-size: 13px;
     text-transform: uppercase;

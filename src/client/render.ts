@@ -80,6 +80,7 @@ function renderHeader(state: PlayerState): string {
                     isCzar: false,
                     roundsWon: 0,
                     winningCards: 0,
+                    didAction: "noAction",
                 },
                 true
             )}
@@ -95,12 +96,25 @@ function renderPlayerHeaderRow(player: Player, isOwn = false): string {
         <div class="player-row${isOwn ? " current" : ""}">
             <div class="player-left">${escapeHtml(player.name)}</div>
             <div class="player-right">
+                ${renderDidActionIndicator(player)}
                 ${player.isCzar ? `<span class="player-tag">zar</span>` : ""}
                 <span>${player.roundsWon} 🏆</span>
                 <span>${player.winningCards} 🃏</span>
             </div>
         </div>
     `;
+}
+
+function renderDidActionIndicator(player: Player): string {
+    if (player.didAction === "noAction") {
+        return "";
+    }
+
+    if (player.didAction) {
+        return `<span class="player-action player-action-done" aria-label="Accion completada">&#10003;</span>`;
+    }
+
+    return `<span class="player-action"><span class="loader" aria-label="Esperando accion"></span></span>`;
 }
 
 function renderConversation(state: PlayerState, ownPlayerName: string): string {

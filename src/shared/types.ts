@@ -39,6 +39,7 @@ export interface Player {
     isCzar: boolean;
     roundsWon: number;
     winningCards: number;
+    didAction: boolean | 'noAction';
 }
 
 export interface PlayCardState {

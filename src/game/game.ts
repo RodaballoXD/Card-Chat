@@ -358,7 +358,8 @@ export class Game {
             isConnected: p.isConnected,
             isCzar: this.isCzar(p.manager.id),
             roundsWon: p.manager.roundsWonCount(),
-            winningCards: p.manager.winningCardsCount()
+            winningCards: p.manager.winningCardsCount(),
+            didAction: this.didAction(p.manager)
         }));
 
         let state: PlayerState["state"];
@@ -380,7 +381,7 @@ export class Game {
                 state = {
                     phase: 'chooseWinner',
                     conversation: [...this.conversation],
-                    choices: [...phaseState.playedCards.map((p) => p.card)]
+                    choices: shuffle([...phaseState.playedCards.map((p) => p.card)])
                 };
             } else {
                 state = {
@@ -423,6 +424,25 @@ export class Game {
         }
 
         return { playerId, players, hand: [...player.manager.getHand()], state: { phase: 'wait', text: 'Esperando a que inicie la partida. Se requieren 3 jugadores' } };
+    }
+
+    private didAction(manager: PlayerManager): boolean | 'noAction' {
+        switch (this.state.phase) {
+            case 'playCards':
+                return (this.isCzar(manager.id)) ? 'noAction' : (this.state.playedCards.some((c) => (c.playerId === manager.id)));
+            case 'chooseWinner':
+                return (this.isCzar(manager.id)) ? false : 'noAction';
+            case 'discardCard':
+                return (this.state.discardedCards.some((c) => (c.discarderId === manager.id)));
+            case 'createCards':
+                if (this.isCzar(manager.id)) {
+                    return (this.settings.keepChat) ? 'noAction' : (this.conversation.length > 0);
+                }
+                const createdCount = this.state.createdCards.filter((c) => (c.creatorId === manager.id)).length;
+                return (createdCount >= (this.state.cardsPerPlayer ?? 1));
+            default:
+                return 'noAction';
+        }
     }
 }
 
