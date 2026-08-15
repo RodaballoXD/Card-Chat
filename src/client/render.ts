@@ -101,6 +101,7 @@ function renderPlayerHeaderRow(player: Player, isOwn = false): string {
                 <span>${player.roundsWon} 🏆</span>
                 <span>${player.winningCards} 🃏</span>
             </div>
+            ${isOwn ? `<span class="panel-toggle-indicator" data-panel-toggle-indicator aria-label="Panel cerrado">&#9656;</span>` : ""}
         </div>
     `;
 }

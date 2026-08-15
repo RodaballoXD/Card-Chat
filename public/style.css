@@ -155,6 +155,7 @@ main {
     background: white;
     color: black;
     width: 100%;
+    cursor: pointer;
 }
 
 .players-panel {
@@ -203,6 +204,25 @@ main {
     font-size: 1.2rem;
 }
 
+.player-row.current .player-right {
+    padding-right: 8px;
+}
+
+.panel-toggle-indicator {
+    align-self: stretch;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 36px;
+    padding-top: 8px;
+    border-left: 1px solid #eeeeee;
+    color: #54656f;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .player-tag {
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -233,7 +253,6 @@ main {
     opacity: 50%;
 }
 
-/* TODO: Instead of modifying transparency, go from black to white so that it works on dark mode too */
 @keyframes l5 {
     0% { box-shadow: 10px 0 #000, -10px 0 #0002; background: #000 }
     33% { box-shadow: 10px 0 #000, -10px 0 #0002; background: #0002 }

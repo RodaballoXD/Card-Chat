@@ -60,7 +60,9 @@ export function bindGameInteractions(context: InteractionContext, state: PlayerS
         } else {
             panel.setAttribute("hidden", "true");
         }
+        updatePanelToggleIndicator(appEl);
     });
+    updatePanelToggleIndicator(appEl);
 
     appEl.querySelectorAll("[data-action=create-card]").forEach((button) => {
         button.addEventListener("click", () => {
@@ -160,4 +162,14 @@ function handleSettingsChangeCommand(socket: Socket, command: string, showError:
     } catch (error) {
         showError((error instanceof Error) ? error.message : "Invalid settings command");
     }
+}
+
+function updatePanelToggleIndicator(appEl: HTMLElement) {
+    const panel = appEl.querySelector("[data-panel=players]") as HTMLElement | null;
+    const indicator = appEl.querySelector("[data-panel-toggle-indicator]") as HTMLElement | null;
+    if (!panel || !indicator) return;
+
+    const isOpen = !panel.hasAttribute("hidden");
+    indicator.innerHTML = isOpen ? "&#9662;" : "&#9656;";
+    indicator.setAttribute("aria-label", isOpen ? "Panel abierto" : "Panel cerrado");
 }
