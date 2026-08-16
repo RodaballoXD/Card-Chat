@@ -175,10 +175,9 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 56px;
+    min-height: 48px;
     width: 100%;
-    padding: 0;
-    margin: 0;
+    padding-right: 18px;
     border: none;
     border-bottom: 1px solid #dcdcdc;
     background: transparent;
@@ -204,23 +203,14 @@ main {
     font-size: 1.2rem;
 }
 
-.player-row.current .player-right {
-    padding-right: 8px;
-}
-
 .panel-toggle-indicator {
-    align-self: stretch;
-    flex-shrink: 0;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    width: 36px;
-    padding-top: 8px;
-    border-left: 1px solid #eeeeee;
-    color: #54656f;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
+    position: absolute;
+    z-index: 30;
+    top: 1px;
+    right: 6px;
+    font-size: 30px;
+    pointer-events: none;
+    opacity: 67%;
 }
 
 .player-tag {

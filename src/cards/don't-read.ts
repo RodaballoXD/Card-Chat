@@ -34,7 +34,7 @@ export const PRESET_CARDS: string[] = [
     "Me gustan los micropenes",
     "so",
     "ESTRÚJAMELA",
-    "uwu",
+    "UwU",
     "A mí me encantaaaa 💕💕💕",
     "Orgásmico",
     "XD",
@@ -61,7 +61,13 @@ export const PRESET_CARDS: string[] = [
     "Lo haces muy bien para tener 8 años",
     "Tú sabes que este chat es el grupo, ¿verdad?",
     "Reseña honesta: tu madre está muy cara para lo que ofrece",
-    // TODO: Add more cards
+    "Tienes un precio muy accesible, la verdad",
+    "Soy virgen",
+    "Muy hasta el fondo, por favor",
+    "Me gusta el pito. Quiero pito. Dame pito.",
+    "¿Es un problema que ella la tenga más grande que él?",
+    "Bésame ya directamente",
+    "Dame lo mío"
 ];
 
 export const PRESET_STARTERS: string[] = [
